@@ -128,16 +128,26 @@ function calendarCell(text, labelStyle, cellStyle, createLabel, cellHeight, dotC
 	labelActor.x_align = Clutter.ActorAlign.CENTER;
 	labelActor.y_align = Clutter.ActorAlign.CENTER;
 	cell.set_size(CALENDAR_CELL_WIDTH, cellHeight);
-	cell.add_child(labelActor);
 
-	if (dotColor) {
-		cell.add_child(new St.Widget({
-			style_class: 'widget-calendar-event-dot',
-			style: `background-color: ${dotColor};`,
-			x_align: Clutter.ActorAlign.CENTER,
-			y_align: Clutter.ActorAlign.END,
-		}));
+	if (!dotColor) {
+		cell.add_child(labelActor);
+		return cell;
 	};
+
+	// Digit and marker stacked and centered together, so the marker sits under the digit.
+	const stack = new St.BoxLayout({
+		orientation: Clutter.Orientation.VERTICAL,
+		x_align: Clutter.ActorAlign.CENTER,
+		y_align: Clutter.ActorAlign.CENTER,
+	});
+
+	stack.add_child(labelActor);
+	stack.add_child(new St.Widget({
+		style_class: 'widget-calendar-event-dot',
+		style: `background-color: ${dotColor};`,
+		x_align: Clutter.ActorAlign.CENTER,
+	}));
+	cell.add_child(stack);
 
 	return cell;
 };
@@ -271,7 +281,8 @@ function buildMonth(context, source, firstDay) {
 				? `background-color: ${theme.accent}; border-radius: 999px;`
 				: null;
 			const hasEvents = source?.hasEvents(new Date(year, month, day)) ?? false;
-			const dotColor = hasEvents ? (isToday ? '#ffffff' : theme.accent) : null;
+			// Transparent marker on empty days keeps digits on one line across the row.
+			const dotColor = hasEvents ? (isToday ? '#ffffff' : theme.accent) : 'transparent';
 
 			row.add_child(calendarCell(String(day), labelStyle, cellStyle, createLabel, cellHeight, dotColor));
 			day++;
