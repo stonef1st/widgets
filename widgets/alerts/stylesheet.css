@@ -1,0 +1,25 @@
+.widget-alerts .widget-body {
+	spacing: 2px;
+}
+
+.widget-alerts-header {
+	spacing: 8px;
+}
+
+.widget-alerts-icon {
+	icon-size: 22px;
+}
+
+.widget-alerts-region {
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.widget-alerts-title {
+	font-size: 22px;
+	font-weight: 800;
+}
+
+.widget-alerts-detail {
+	font-size: 13px;
+}

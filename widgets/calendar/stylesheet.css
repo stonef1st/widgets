@@ -23,3 +23,37 @@
 	font-size: 12px;
 	text-align: center;
 }
+
+.widget-calendar-event-dot {
+	width: 4px;
+	height: 4px;
+	border-radius: 2px;
+	margin-bottom: 1px;
+}
+
+.widget-calendar-wide {
+	spacing: 20px;
+}
+
+.widget-calendar-events {
+	spacing: 10px;
+}
+
+.widget-calendar-event {
+	spacing: 1px;
+	padding-left: 8px;
+	border-left-width: 3px;
+}
+
+.widget-calendar-event-time {
+	font-size: 11px;
+	font-weight: 700;
+}
+
+.widget-calendar-event-title {
+	font-size: 13px;
+}
+
+.widget-calendar-event-empty {
+	font-size: 13px;
+}

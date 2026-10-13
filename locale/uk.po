@@ -1,0 +1,275 @@
+# Ukrainian translation for widgets-uk@stonef1st.
+msgid ""
+msgstr ""
+"Language: uk\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "%s h %s min"
+msgstr "%s год %s хв"
+
+msgid "%s min"
+msgstr "%s хв"
+
+msgid "Add %s"
+msgstr "Додати: %s"
+
+msgid "Air Raid Alerts"
+msgstr "Повітряні тривоги"
+
+msgid "Air raid alert"
+msgstr "Повітряна тривога"
+
+msgid "Alert service unavailable"
+msgstr "Сервіс тривог недоступний"
+
+msgid "All clear"
+msgstr "Відбій тривоги"
+
+msgid "All clear at %s"
+msgstr "Відбій о %s"
+
+msgid "All day"
+msgstr "Весь день"
+
+msgid "Artillery shelling"
+msgstr "Загроза артобстрілу"
+
+msgid "Automatic"
+msgstr "Автоматично"
+
+msgid "Battery"
+msgstr "Батарея"
+
+msgid "Calendar"
+msgstr "Календар"
+
+msgid "Change widget size"
+msgstr "Змінити розмір віджета"
+
+msgid "Chemical threat"
+msgstr "Хімічна загроза"
+
+msgid "Cherkasy Oblenergo"
+msgstr "Черкасиобленерго"
+
+msgid "Chernihiv Oblenergo"
+msgstr "Чернігівобленерго"
+
+msgid "Choose a region"
+msgstr "Оберіть регіон"
+
+msgid "Choose your group"
+msgstr "Оберіть чергу"
+
+msgid "Clock"
+msgstr "Годинник"
+
+msgid "Computer"
+msgstr "Комп’ютер"
+
+msgid "Could not load regions"
+msgstr "Не вдалося завантажити регіони"
+
+msgid "Data may be outdated"
+msgstr "Дані можуть бути застарілими"
+
+msgid "Data: siren.pp.ua (ukrainealarm.com). Alerts for the whole oblast and for communities inside the region also count."
+msgstr "Дані: siren.pp.ua (ukrainealarm.com). Враховуються також тривоги на всю область і в громадах усередині регіону."
+
+msgid "Device"
+msgstr "Пристрій"
+
+msgid "Dots under days with events; a wide calendar also lists upcoming events. Uses the calendars from the top bar."
+msgstr "Крапки під днями з подіями; широкий календар також показує найближчі події. Використовує календарі з верхньої панелі."
+
+msgid "Edit Widgets"
+msgstr "Редагувати віджети"
+
+msgid "Feels like %s"
+msgstr "Відчувається як %s"
+
+msgid "First day of week"
+msgstr "Перший день тижня"
+
+msgid "General"
+msgstr "Загальні"
+
+msgid "Group"
+msgstr "Черга"
+
+msgid "Group %s"
+msgstr "Черга %s"
+
+msgid "Hourly schedules (ГПВ) from github.com/yaroslav2901/OE_OUTAGE_DATA. Your group is on your oblenergo website or bill."
+msgstr "Погодинні графіки (ГПВ) з github.com/yaroslav2901/OE_OUTAGE_DATA. Свою чергу дізнайтеся на сайті обленерго або в рахунку."
+
+msgid "Keyboard"
+msgstr "Клавіатура"
+
+msgid "Kharkiv Oblenergo"
+msgstr "Харківобленерго"
+
+msgid "Khmelnytskyi Oblenergo"
+msgstr "Хмельницькобленерго"
+
+msgid "Language"
+msgstr "Мова"
+
+msgid "Last schedule: %s"
+msgstr "Останній графік: %s"
+
+msgid "Loading regions…"
+msgstr "Завантаження регіонів…"
+
+msgid "Loading…"
+msgstr "Завантаження…"
+
+msgid "Lviv Oblenergo"
+msgstr "Львівобленерго"
+
+msgid "Monday"
+msgstr "Понеділок"
+
+msgid "Mouse"
+msgstr "Миша"
+
+msgid "No alert"
+msgstr "Тривоги немає"
+
+msgid "No changes until midnight"
+msgstr "Без змін до півночі"
+
+msgid "No changes until tomorrow night"
+msgstr "Без змін до кінця завтрашнього дня"
+
+msgid "No data"
+msgstr "Немає даних"
+
+msgid "No schedule today"
+msgstr "Графіка на сьогодні немає"
+
+msgid "No upcoming events"
+msgstr "Найближчих подій немає"
+
+msgid "Not set"
+msgstr "Не вибрано"
+
+msgid "Notifications"
+msgstr "Сповіщення"
+
+msgid "Notify when an alert starts or ends"
+msgstr "Сповіщати про початок і відбій тривоги"
+
+msgid "Nuclear threat"
+msgstr "Радіаційна загроза"
+
+msgid "Oblast, district or community; type to search"
+msgstr "Область, район або громада; почніть вводити для пошуку"
+
+msgid "Open Weather to set a location"
+msgstr "Відкрийте «Погоду», щоб вибрати місто"
+
+msgid "Open extension settings"
+msgstr "Відкрийте налаштування розширення"
+
+msgid "Outage at %s"
+msgstr "Відключення о %s"
+
+msgid "Photos"
+msgstr "Фото"
+
+msgid "Poltava Oblenergo"
+msgstr "Полтаваобленерго"
+
+msgid "Possible outage"
+msgstr "Можливе відключення"
+
+msgid "Possible outage at %s"
+msgstr "Можливе відключення о %s"
+
+msgid "Power Outages"
+msgstr "Відключення світла"
+
+msgid "Power back at %s"
+msgstr "Увімкнення о %s"
+
+msgid "Power off"
+msgstr "Світла немає"
+
+msgid "Power on"
+msgstr "Світло є"
+
+msgid "Provider"
+msgstr "Постачальник"
+
+msgid "Prykarpattia Oblenergo"
+msgstr "Прикарпаттяобленерго"
+
+msgid "Queue and subqueue"
+msgstr "Черга та підчерга"
+
+msgid "Region"
+msgstr "Регіон"
+
+msgid "Region not set"
+msgstr "Регіон не вибрано"
+
+msgid "Remove widget"
+msgstr "Видалити віджет"
+
+msgid "Reopen settings to see them in the new language"
+msgstr "Перевідкрийте налаштування, щоб побачити їх новою мовою"
+
+msgid "Reset Default Widgets"
+msgstr "Скинути до типових"
+
+msgid "Rivne Oblenergo"
+msgstr "Рівнеобленерго"
+
+msgid "Schedule ends at %s"
+msgstr "Графік закінчується о %s"
+
+msgid "Show events"
+msgstr "Показувати події"
+
+msgid "Since %s"
+msgstr "З %s"
+
+msgid "Sunday"
+msgstr "Неділя"
+
+msgid "Ternopil Oblenergo"
+msgstr "Тернопільобленерго"
+
+msgid "Today"
+msgstr "Сьогодні"
+
+msgid "Tomorrow"
+msgstr "Завтра"
+
+msgid "Unknown widget"
+msgstr "Невідомий віджет"
+
+msgid "Untitled event"
+msgstr "Подія без назви"
+
+msgid "Urban fighting"
+msgstr "Вуличні бої"
+
+msgid "Weather"
+msgstr "Погода"
+
+msgid "Weather unavailable"
+msgstr "Погода недоступна"
+
+msgid "Widgets"
+msgstr "Віджети"
+
+msgid "Zakarpattia Oblenergo"
+msgstr "Закарпаттяобленерго"
+
+msgid "Zaporizhzhia Oblenergo"
+msgstr "Запоріжжяобленерго"
+
+msgid "Zhytomyr Oblenergo"
+msgstr "Житомиробленерго"

@@ -5,9 +5,10 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import { warn } from '../../logger.js';
+import { _ } from '../../i18n.js';
 
 export const type = 'battery';
-export const label = 'Батарея';
+export const label = 'Battery';
 export const stylesheet = 'widgets/battery/stylesheet.css';
 export const defaultSize = 'medium';
 
@@ -137,16 +138,16 @@ function deviceName(props, kind) {
 		return vendor;
 	};
 	if (kind === DEVICE_TYPE.BATTERY) {
-		return 'Комп’ютер';
+		return _('Computer');
 	};
 	if (kind === DEVICE_TYPE.MOUSE) {
-		return 'Миша';
+		return _('Mouse');
 	};
 	if (kind === DEVICE_TYPE.KEYBOARD) {
-		return 'Клавіатура';
+		return _('Keyboard');
 	};
 
-	return 'Пристрій';
+	return _('Device');
 };
 
 function isBatteryLike(props) {
@@ -462,4 +463,8 @@ export function render({body, createLabel, theme}) {
 	liveBodies.set(body, {theme, createLabel});
 	buildTray(body, theme, createLabel);
 	requestDevices();
+};
+
+export function cleanup() {
+	liveBodies.clear();
 };

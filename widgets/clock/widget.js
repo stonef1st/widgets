@@ -4,7 +4,7 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 export const type = 'clock';
-export const label = 'Годинник';
+export const label = 'Clock';
 export const stylesheet = 'widgets/clock/stylesheet.css';
 export const defaultSize = 'small';
 

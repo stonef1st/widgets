@@ -9,12 +9,15 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
+import * as AlertsWidget from './widgets/alerts/widget.js';
 import * as BatteryWidget from './widgets/battery/widget.js';
 import * as CalendarWidget from './widgets/calendar/widget.js';
 import * as ClockWidget from './widgets/clock/widget.js';
 import * as PhotosWidget from './widgets/photos/widget.js';
+import * as PowerWidget from './widgets/power/widget.js';
 import * as WeatherWidget from './widgets/weather/widget.js';
 import { configureLogger, resetLogger, warn } from './logger.js';
+import { _, format, setLanguage } from './i18n.js';
 import { WorkspaceIntegration } from './workspaceIntegration.js';
 
 const EXTENSION_PATH = GLib.path_get_dirname(GLib.filename_from_uri(import.meta.url)[0]);
@@ -33,10 +36,12 @@ const WIDGET_MODULES = [
   WeatherWidget,
   PhotosWidget,
   BatteryWidget,
+  AlertsWidget,
+  PowerWidget,
 ];
 const WIDGETS = new Map(WIDGET_MODULES.map(widgetModule => [widgetModule.type, widgetModule]));
 const WIDGET_TYPES = WIDGET_MODULES.map(widgetModule => [widgetModule.type, widgetModule.label]);
-const DEFAULT_WIDGETS = WIDGET_MODULES.map(widgetModule => ({
+const DEFAULT_WIDGETS = WIDGET_MODULES.filter(widgetModule => !widgetModule.optional).map(widgetModule => ({
   id: `${widgetModule.type}-default`,
   type: widgetModule.type,
   size: widgetModule.defaultSize,
@@ -181,6 +186,7 @@ class WidgetController {
     this._lastAppLaunchAt = 0;
     this._workspaceIntegration = new WorkspaceIntegration();
     this._layoutSettings = extension.getSettings();
+    setLanguage(this._layoutSettings.get_string('language'));
     this._interfaceSettings = new Gio.Settings({schema_id: INTERFACE_SCHEMA});
     this._weatherSettings = new Gio.Settings({schema_id: WeatherWidget.settingsSchema});
     this._weather = null;
@@ -208,6 +214,8 @@ class WidgetController {
       'changed::accent-color', () => this._rebuildWidgets(),
       this
     );
+
+    this._layoutSettings.connectObject('changed', (_settings, key) => this._onSettingChanged(key), this);
 
     this._weatherSettings.connectObject('changed::locations', () => {
       this._weather = null;
@@ -242,6 +250,7 @@ class WidgetController {
     Main.layoutManager.disconnectObject(this);
     this._interfaceSettings.disconnectObject(this);
     this._weatherSettings.disconnectObject(this);
+    this._layoutSettings.disconnectObject(this);
 
     for (const id of this._dbusSignalIds) {
       Gio.DBus.system.signal_unsubscribe(id);
@@ -487,21 +496,21 @@ class WidgetController {
       style_class: 'widget-panel-icon',
     }));
 
-    const editItem = new PopupMenu.PopupSwitchMenuItem('Редагувати віджети', this._editMode);
+    const editItem = new PopupMenu.PopupSwitchMenuItem(_('Edit Widgets'), this._editMode);
     editItem.connectObject('toggled', (_item, state) => this.setEditMode(state), this);
 
     this._indicator.menu.addMenuItem(editItem);
     this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
     for (const [type, label] of WIDGET_TYPES) {
-      const item = new PopupMenu.PopupMenuItem(`Додати: ${label}`);
+      const item = new PopupMenu.PopupMenuItem(format(_('Add %s'), _(label)));
       item.connectObject('activate', () => this.addWidget(type), this);
       this._indicator.menu.addMenuItem(item);
     };
 
     this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-    const resetItem = new PopupMenu.PopupMenuItem('Скинути до типових');
+    const resetItem = new PopupMenu.PopupMenuItem(_('Reset Default Widgets'));
     resetItem.connectObject('activate', () => {
       this._widgets = cloneDefaultWidgets();
       this._saveWidgets();
@@ -510,6 +519,22 @@ class WidgetController {
 
     this._indicator.menu.addMenuItem(resetItem);
     Main.panel.addToStatusArea(this._extension.uuid, this._indicator);
+  };
+
+  _onSettingChanged(key) {
+    if (key === LAYOUT_KEY) {
+      return;
+    };
+
+    if (key === 'language') {
+      setLanguage(this._layoutSettings.get_string('language'));
+      this._indicator?.destroy();
+      this._createIndicator();
+      this._weatherUpdateTime = 0;
+      this._refreshWeather(true);
+    };
+
+    this._rebuildWidgets();
   };
 
   setEditMode(enabled) {
@@ -546,6 +571,21 @@ class WidgetController {
     widget.y = position.y;
     this._widgets.push(widget);
 
+    this._saveWidgets();
+    this._rebuildWidgets();
+  };
+
+  cycleWidgetSize(id) {
+    const widget = this._widgets.find(item => item.id === id);
+
+    if (!widget) {
+      return;
+    };
+
+    const sizes = Object.keys(WIDGET_SIZES);
+
+    widget.size = sizes[(sizes.indexOf(widget.size) + 1) % sizes.length];
+    [widget.width, widget.height] = WIDGET_SIZES[widget.size];
     this._saveWidgets();
     this._rebuildWidgets();
   };
@@ -635,6 +675,7 @@ class WidgetController {
       body,
       editBorder: null,
       removeButton: null,
+      sizeButton: null,
     };
     this._views.set(widget.id, view);
 
@@ -655,6 +696,7 @@ class WidgetController {
     return {
       x: widget.x + width - buttonWidth - 8,
       y: widget.y + 8,
+      width: buttonWidth,
     };
   };
 
@@ -684,10 +726,18 @@ class WidgetController {
         duration: 130,
         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
       });
+
+      view.sizeButton?.ease({
+        x: button.x - button.width - 4,
+        y: button.y,
+        duration: 130,
+        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+      });
     } else {
       view.editBorder?.set_position(overlay.x, overlay.y);
       view.editBorder?.set_size(overlay.width, overlay.height);
       view.removeButton?.set_position(button.x, button.y);
+      view.sizeButton?.set_position(button.x - button.width - 4, button.y);
     };
 
     if (view.editBorder) {
@@ -696,6 +746,10 @@ class WidgetController {
 
     if (view.removeButton) {
       raiseActor(view.removeButton);
+    };
+
+    if (view.sizeButton) {
+      raiseActor(view.sizeButton);
     };
   };
 
@@ -711,16 +765,28 @@ class WidgetController {
       reactive: true,
       can_focus: true,
       track_hover: true,
-      accessible_name: 'Видалити віджет',
+      accessible_name: _('Remove widget'),
     });
 
     this._layer.add_child(editBorder);
 
+    const sizeButton = new St.Button({
+      style_class: 'icon-button',
+      icon_name: 'view-fullscreen-symbolic',
+      reactive: true,
+      can_focus: true,
+      track_hover: true,
+      accessible_name: _('Change widget size'),
+    });
+
     removeButton.connectObject('clicked', () => this.removeWidget(view.widget.id), this);
+    sizeButton.connectObject('clicked', () => this.cycleWidgetSize(view.widget.id), this);
     this._layer.add_child(removeButton);
+    this._layer.add_child(sizeButton);
 
     view.editBorder = editBorder;
     view.removeButton = removeButton;
+    view.sizeButton = sizeButton;
     this._syncEditControls(view.widget);
   };
 
@@ -911,7 +977,7 @@ class WidgetController {
     const widgetModule = WIDGETS.get(widget.type);
 
     if (!widgetModule?.render) {
-      body.add_child(this._label('Невідомий віджет', 'widget-text'));
+      body.add_child(this._label(_('Unknown widget'), 'widget-text'));
       return;
     };
 
@@ -921,6 +987,7 @@ class WidgetController {
       theme: this._gnomeTheme(),
       weather: this._weather,
       weatherLocation: this._weatherLocation,
+      settings: this._layoutSettings,
       createLabel: this._label.bind(this),
       sizeForWidget,
     });
@@ -1123,7 +1190,9 @@ export default class DesktopWidgetsExtension extends Extension {
   disable() {
     this._controller?.destroy();
     this._controller = null;
-    PhotosWidget.cleanup();
+    for (const widgetModule of WIDGET_MODULES) {
+      widgetModule.cleanup?.();
+    };
     this._unloadWidgetStylesheets();
     resetLogger();
   };

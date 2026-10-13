@@ -4,10 +4,19 @@
 >
 > Changes on top of upstream:
 >
-> - Calendar week starts on Monday.
-> - Battery widget: level icon for the laptop battery (with charging state),
->   headphones icon for headsets, gamepad icon for gaming input.
-> - Ukrainian UI: menu, widget labels, weather strings, calendar.
+> - Preferences window: language, first day of week, calendar events,
+>   alert region, power outage group.
+> - Translations in `locale/<lang>.po`, chosen in preferences independently
+>   of the session locale (Ukrainian included).
+> - Calendar: events from the top bar calendars (dots under days, upcoming
+>   list on a wide calendar), configurable first day of week.
+> - Edit mode: size button (small → medium → large).
+> - New optional widgets: air raid alerts (siren.pp.ua / ukrainealarm.com,
+>   with notifications) and power outage schedule
+>   ([OE_OUTAGE_DATA](https://github.com/yaroslav2901/OE_OUTAGE_DATA)).
+> - Battery widget: async D-Bus reads, only connected devices, level icon for
+>   the laptop battery, headphones and gamepad icons.
+> - Weather: icon matches the text when only forecast data has sky info.
 >
 > Install:
 >

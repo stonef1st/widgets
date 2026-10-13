@@ -1,0 +1,44 @@
+.widget-power .widget-body {
+	spacing: 2px;
+}
+
+.widget-power-header {
+	spacing: 8px;
+}
+
+.widget-power-icon {
+	icon-size: 20px;
+}
+
+.widget-power-group {
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.widget-power-title {
+	font-size: 22px;
+	font-weight: 800;
+}
+
+.widget-power-detail {
+	font-size: 13px;
+}
+
+.widget-power-strip {
+	spacing: 1px;
+	margin-top: 8px;
+	height: 14px;
+}
+
+.widget-power-slot {
+	border-radius: 2px;
+	min-width: 2px;
+}
+
+.widget-power-slot-current {
+	border-width: 1px;
+}
+
+.widget-power-scale-label {
+	font-size: 10px;
+}

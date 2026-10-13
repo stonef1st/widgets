@@ -5,9 +5,10 @@ import GWeather from 'gi://GWeather';
 import St from 'gi://St';
 
 import { warn } from '../../logger.js';
+import { _, format, language } from '../../i18n.js';
 
 export const type = 'weather';
-export const label = 'Погода';
+export const label = 'Weather';
 export const stylesheet = 'widgets/weather/stylesheet.css';
 export const appIds = ['org.gnome.Weather.desktop'];
 export const settingsSchema = 'org.gnome.Weather';
@@ -75,21 +76,28 @@ export function weatherFromInfo(info, location, displayName = null) {
 	const apparent = formatTemperature(currentInfo.get_apparent());
 	// Current observations may have a temperature but no sky/conditions;
 	// take text and icon from the nearest forecast together so they match.
-	const currentSummary = ukrainianSummary(currentInfo);
-	const describedInfo = currentSummary ? currentInfo : currentForecastInfo(info);
-	const summary = currentSummary ?? ukrainianSummary(describedInfo);
+	const describedInfo = hasDescription(currentInfo) ? currentInfo : currentForecastInfo(info);
+	const summary = language() === 'uk' ? ukrainianSummary(describedInfo) : null;
 
 	return {
 		temp: formatTemperature(currentInfo.get_temp()),
-		summary: summary ?? cleanSummary(currentInfo.get_weather_summary(), locationName),
+		summary: summary ?? cleanSummary(describedInfo.get_weather_summary(), locationName),
 		location: displayName || location.get_city_name() || locationName,
-		icon: (summary ? describedInfo : currentInfo).get_icon_name() || 'weather-clear',
-		feelsLike: apparent && apparent !== '--' ? `Відчувається як ${apparent}` : null,
+		icon: describedInfo.get_icon_name() || 'weather-clear',
+		feelsLike: apparent && apparent !== '--' ? format(_('Feels like %s'), apparent) : null,
 	};
 };
 
-// libgweather translates by the system locale, which is en_US here,
-// so the condition text is built from the raw sky/phenomenon values.
+function hasDescription(info) {
+	const [hasConditions, phenomenon] = info.get_value_conditions();
+	const [hasSky] = info.get_value_sky();
+
+	return hasSky || (hasConditions && phenomenon !== GWeather.ConditionPhenomenon.NONE);
+};
+
+// libgweather translates by the session locale, which may differ from the
+// widget language, so Ukrainian condition text is built from the raw
+// sky/phenomenon values. Ukrainian grammar does not fit plain .po strings.
 // Gender: m, f, n or p (plural) — adjectives must agree with the noun.
 const SKY_TEXT = {
 	[GWeather.Sky.CLEAR]: 'Ясно',
@@ -234,7 +242,7 @@ function formatTemperature(temperature) {
 
 function cleanSummary(summary, locationName) {
 	if (!summary) {
-		return 'Погода недоступна';
+		return _('Weather unavailable');
 	};
 
 	if (locationName && summary.startsWith(`${locationName}: `)) {
@@ -291,10 +299,10 @@ function fullColorWeatherIcon(iconName) {
 };
 
 export function render({body, widget, createLabel, theme, weather, weatherLocation}) {
-	const detail = widget.data.detail || 'Погода недоступна';
+	const detail = widget.data.detail || _('Weather unavailable');
 	const renderedWeather = weather ?? {
 		temp: formatTemperature(String(detail).split(/\s+/)[0] || '--'),
-		summary: String(detail).replace(/^\S+\s*/, '') || 'Відкрийте «Погоду», щоб вибрати місто',
+		summary: String(detail).replace(/^\S+\s*/, '') || _('Open Weather to set a location'),
 		location: weatherLocation || widget.data.location || 'GNOME Weather',
 		icon: fallbackIcon(detail),
 		feelsLike: null,

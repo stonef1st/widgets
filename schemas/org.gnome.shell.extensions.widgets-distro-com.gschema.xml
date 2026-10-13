@@ -6,5 +6,50 @@
       <summary>Serialized widget layout</summary>
       <description>Stores widget types, sizes, and desktop positions as JSON.</description>
     </key>
+    <key name="language" type="s">
+      <default>'auto'</default>
+      <summary>Widget language</summary>
+      <description>'auto' follows the session language; otherwise a code with a translation in locale/, e.g. 'uk' or 'en'.</description>
+    </key>
+    <key name="first-day-of-week" type="s">
+      <choices>
+        <choice value="auto"/>
+        <choice value="monday"/>
+        <choice value="sunday"/>
+      </choices>
+      <default>'auto'</default>
+      <summary>First day of the calendar week</summary>
+      <description>'auto' uses Monday for Ukrainian and the session locale otherwise.</description>
+    </key>
+    <key name="calendar-show-events" type="b">
+      <default>true</default>
+      <summary>Show calendar events</summary>
+      <description>Mark days with events and list upcoming events on wide calendars. Uses the same calendars as the top bar.</description>
+    </key>
+    <key name="alerts-region-id" type="s">
+      <default>''</default>
+      <summary>Air raid alert region</summary>
+      <description>ukrainealarm region id (oblast, district or community). Alerts in its parent oblast and its communities also count.</description>
+    </key>
+    <key name="alerts-region-name" type="s">
+      <default>''</default>
+      <summary>Air raid alert region name</summary>
+      <description>Display name cached with alerts-region-id.</description>
+    </key>
+    <key name="alerts-notify" type="b">
+      <default>true</default>
+      <summary>Notify on alert changes</summary>
+      <description>Show a notification when an alert starts or ends in the selected region.</description>
+    </key>
+    <key name="outage-provider" type="s">
+      <default>''</default>
+      <summary>Power outage provider</summary>
+      <description>Data file name in yaroslav2901/OE_OUTAGE_DATA, e.g. 'Khmelnytskoblenerho'.</description>
+    </key>
+    <key name="outage-group" type="s">
+      <default>''</default>
+      <summary>Power outage group</summary>
+      <description>Queue and subqueue, e.g. 'GPV3.1'.</description>
+    </key>
   </schema>
 </schemalist>
