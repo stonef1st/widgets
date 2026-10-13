@@ -32,6 +32,11 @@ const DEVICE_TYPE = {
 	OTHER_AUDIO: 21,
 };
 
+const UPOWER_STATE = {
+	CHARGING: 1,
+	FULLY_CHARGED: 4,
+};
+
 function variantValue(props, name, fallback = null) {
 	return props[name] ? props[name].deep_unpack() : fallback;
 };
@@ -56,7 +61,22 @@ function bluezIconName(iconName) {
 		return 'bluetooth-symbolic';
 	};
 
+	if (iconName === 'audio-headset') {
+		return 'audio-headphones-symbolic';
+	};
+
 	return iconName.endsWith('-symbolic') ? iconName : `${iconName}-symbolic`;
+};
+
+function batteryLevelIcon(device) {
+	if (device.state === UPOWER_STATE.FULLY_CHARGED) {
+		return 'battery-level-100-charged-symbolic';
+	};
+
+	const level = Math.round(device.percentage / 10) * 10;
+	const suffix = device.state === UPOWER_STATE.CHARGING ? '-charging' : '';
+
+	return `battery-level-${level}${suffix}-symbolic`;
 };
 
 function iconForDevice(device) {
@@ -71,10 +91,11 @@ function iconForDevice(device) {
 	switch (device.kind) {
 		case DEVICE_TYPE.BATTERY:
 		case DEVICE_TYPE.COMPUTER:
-			return device.powerSupply ? 'computer-symbolic' : 'battery-symbolic';
+			return device.powerSupply ? batteryLevelIcon(device) : 'battery-symbolic';
 		case DEVICE_TYPE.MOUSE:
-		case DEVICE_TYPE.GAMING_INPUT:
 			return 'input-mouse-symbolic';
+		case DEVICE_TYPE.GAMING_INPUT:
+			return 'input-gaming-symbolic';
 		case DEVICE_TYPE.KEYBOARD:
 			return 'input-keyboard-symbolic';
 		case DEVICE_TYPE.PHONE:
@@ -85,7 +106,6 @@ function iconForDevice(device) {
 		case DEVICE_TYPE.TOUCHPAD:
 			return 'input-tablet-symbolic';
 		case DEVICE_TYPE.HEADSET:
-			return 'audio-headset-symbolic';
 		case DEVICE_TYPE.HEADPHONES:
 		case DEVICE_TYPE.OTHER_AUDIO:
 			return 'audio-headphones-symbolic';
@@ -189,6 +209,7 @@ function readUPowerDevices() {
 				kind,
 				percentage,
 				powerSupply: variantValue(props, 'PowerSupply', false),
+				state: variantValue(props, 'State', 0),
 				iconName: variantValue(props, 'IconName', null),
 				nativePath: variantValue(props, 'NativePath', null),
 			});
