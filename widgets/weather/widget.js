@@ -73,14 +73,116 @@ export function weatherFromInfo(info, location, displayName = null) {
 	const currentInfo = currentConditionsInfo(info);
 	const locationName = currentInfo.get_location_name();
 	const apparent = formatTemperature(currentInfo.get_apparent());
+	// Current observations may have a temperature but no sky/conditions;
+	// take text and icon from the nearest forecast together so they match.
+	const currentSummary = ukrainianSummary(currentInfo);
+	const describedInfo = currentSummary ? currentInfo : currentForecastInfo(info);
+	const summary = currentSummary ?? ukrainianSummary(describedInfo);
 
 	return {
 		temp: formatTemperature(currentInfo.get_temp()),
-		summary: cleanSummary(currentInfo.get_weather_summary(), locationName),
+		summary: summary ?? cleanSummary(currentInfo.get_weather_summary(), locationName),
 		location: displayName || location.get_city_name() || locationName,
-		icon: currentInfo.get_icon_name() || 'weather-clear',
+		icon: (summary ? describedInfo : currentInfo).get_icon_name() || 'weather-clear',
 		feelsLike: apparent && apparent !== '--' ? `Відчувається як ${apparent}` : null,
 	};
+};
+
+// libgweather translates by the system locale, which is en_US here,
+// so the condition text is built from the raw sky/phenomenon values.
+// Gender: m, f, n or p (plural) — adjectives must agree with the noun.
+const SKY_TEXT = {
+	[GWeather.Sky.CLEAR]: 'Ясно',
+	[GWeather.Sky.FEW]: 'Малохмарно',
+	[GWeather.Sky.SCATTERED]: 'Мінлива хмарність',
+	[GWeather.Sky.BROKEN]: 'Хмарно',
+	[GWeather.Sky.OVERCAST]: 'Похмуро',
+};
+
+const PHENOMENON_TEXT = {
+	[GWeather.ConditionPhenomenon.DRIZZLE]: ['мряка', 'f'],
+	[GWeather.ConditionPhenomenon.RAIN]: ['дощ', 'm'],
+	[GWeather.ConditionPhenomenon.SNOW]: ['сніг', 'm'],
+	[GWeather.ConditionPhenomenon.SNOW_GRAINS]: ['снігова крупа', 'f'],
+	[GWeather.ConditionPhenomenon.ICE_CRYSTALS]: ['крижані голки', 'p'],
+	[GWeather.ConditionPhenomenon.ICE_PELLETS]: ['крижана крупа', 'f'],
+	[GWeather.ConditionPhenomenon.HAIL]: ['град', 'm'],
+	[GWeather.ConditionPhenomenon.SMALL_HAIL]: ['дрібний град', 'm'],
+	[GWeather.ConditionPhenomenon.UNKNOWN_PRECIPITATION]: ['опади', 'p'],
+	[GWeather.ConditionPhenomenon.MIST]: ['серпанок', 'm'],
+	[GWeather.ConditionPhenomenon.FOG]: ['туман', 'm'],
+	[GWeather.ConditionPhenomenon.SMOKE]: ['дим', 'm'],
+	[GWeather.ConditionPhenomenon.VOLCANIC_ASH]: ['вулканічний попіл', 'm'],
+	[GWeather.ConditionPhenomenon.SAND]: ['пісок', 'm'],
+	[GWeather.ConditionPhenomenon.HAZE]: ['імла', 'f'],
+	[GWeather.ConditionPhenomenon.SPRAY]: ['бризки', 'p'],
+	[GWeather.ConditionPhenomenon.DUST]: ['пил', 'm'],
+	[GWeather.ConditionPhenomenon.SQUALL]: ['шквал', 'm'],
+	[GWeather.ConditionPhenomenon.SANDSTORM]: ['піщана буря', 'f'],
+	[GWeather.ConditionPhenomenon.DUSTSTORM]: ['пилова буря', 'f'],
+	[GWeather.ConditionPhenomenon.FUNNEL_CLOUD]: ['лійкова хмара', 'f'],
+	[GWeather.ConditionPhenomenon.TORNADO]: ['торнадо', 'n'],
+	[GWeather.ConditionPhenomenon.DUST_WHIRLS]: ['пилові вихори', 'p'],
+};
+
+const QUALIFIER_ADJECTIVE = {
+	[GWeather.ConditionQualifier.LIGHT]: {m: 'слабкий', f: 'слабка', n: 'слабке', p: 'слабкі'},
+	[GWeather.ConditionQualifier.MODERATE]: {m: 'помірний', f: 'помірна', n: 'помірне', p: 'помірні'},
+	[GWeather.ConditionQualifier.HEAVY]: {m: 'сильний', f: 'сильна', n: 'сильне', p: 'сильні'},
+	[GWeather.ConditionQualifier.SHOWERS]: {m: 'короткочасний', f: 'короткочасна', n: 'короткочасне', p: 'короткочасні'},
+	[GWeather.ConditionQualifier.FREEZING]: {m: 'крижаний', f: 'крижана', n: 'крижане', p: 'крижані'},
+	[GWeather.ConditionQualifier.SHALLOW]: {m: 'приземний', f: 'приземна', n: 'приземне', p: 'приземні'},
+};
+
+function capitalize(text) {
+	return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
+function conditionText(phenomenon, qualifier) {
+	const entry = PHENOMENON_TEXT[phenomenon];
+
+	if (!entry) {
+		return null;
+	};
+
+	const [noun, gender] = entry;
+	const adjective = QUALIFIER_ADJECTIVE[qualifier]?.[gender];
+
+	if (adjective) {
+		return capitalize(`${adjective} ${noun}`);
+	};
+
+	switch (qualifier) {
+		case GWeather.ConditionQualifier.THUNDERSTORM:
+			return `Гроза, ${noun}`;
+		case GWeather.ConditionQualifier.VICINITY:
+			return capitalize(`${noun} поблизу`);
+		case GWeather.ConditionQualifier.PATCHES:
+		case GWeather.ConditionQualifier.PARTIAL:
+			return `Місцями ${noun}`;
+		case GWeather.ConditionQualifier.BLOWING:
+			return phenomenon === GWeather.ConditionPhenomenon.SNOW ? 'Заметіль' : capitalize(`${noun} з вітром`);
+		case GWeather.ConditionQualifier.DRIFTING:
+			return phenomenon === GWeather.ConditionPhenomenon.SNOW ? 'Поземок' : capitalize(`${noun} з вітром`);
+		default:
+			return capitalize(noun);
+	};
+};
+
+function ukrainianSummary(info) {
+	const [hasConditions, phenomenon, qualifier] = info.get_value_conditions();
+
+	if (hasConditions) {
+		const text = conditionText(phenomenon, qualifier);
+
+		if (text) {
+			return text;
+		};
+	};
+
+	const [hasSky, sky] = info.get_value_sky();
+
+	return hasSky ? SKY_TEXT[sky] ?? null : null;
 };
 
 function currentConditionsInfo(info) {
@@ -192,7 +294,7 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 	const detail = widget.data.detail || 'Погода недоступна';
 	const renderedWeather = weather ?? {
 		temp: formatTemperature(String(detail).split(/\s+/)[0] || '--'),
-		summary: String(detail).replace(/^\S+\s*/, '') || 'Open Weather to set a location',
+		summary: String(detail).replace(/^\S+\s*/, '') || 'Відкрийте «Погоду», щоб вибрати місто',
 		location: weatherLocation || widget.data.location || 'GNOME Weather',
 		icon: fallbackIcon(detail),
 		feelsLike: null,
