@@ -406,7 +406,7 @@ function createSlot(device, theme, createLabel) {
 	const slot = new St.BoxLayout({
 		orientation: Clutter.Orientation.VERTICAL,
 		style_class: 'widget-battery-slot',
-		x_expand: true,
+		x_expand: false,
 		x_align: Clutter.ActorAlign.CENTER,
 	});
 	const gauge = new St.Widget({style_class: 'widget-battery-gauge'});
@@ -439,11 +439,16 @@ function buildTray(body, theme, createLabel) {
 		style_class: 'widget-battery-tray',
 		x_expand: true,
 		y_expand: true,
+		x_align: Clutter.ActorAlign.CENTER,
 		y_align: Clutter.ActorAlign.CENTER,
 	});
 
-	for (let index = 0; index < SLOT_COUNT; index++) {
-		tray.add_child(createSlot(devices[index] ?? null, theme, createLabel));
+	if (devices.length === 0) {
+		tray.add_child(createSlot(null, theme, createLabel));
+	};
+
+	for (const device of devices) {
+		tray.add_child(createSlot(device, theme, createLabel));
 	};
 
 	body.add_child(tray);
