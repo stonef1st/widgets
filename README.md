@@ -1,3 +1,27 @@
+> **Personal fork** of [TheRealSourcer/widgets](https://github.com/TheRealSourcer/widgets).
+> Installs side by side with the original under its own uuid `widgets-uk@stonef1st`,
+> so extensions.gnome.org updates never overwrite it.
+>
+> Changes on top of upstream:
+>
+> - Calendar week starts on Monday.
+> - Battery widget: level icon for the laptop battery (with charging state),
+>   headphones icon for headsets, gamepad icon for gaming input.
+> - Ukrainian UI: menu, widget labels, weather strings, calendar.
+>
+> Install:
+>
+> ```bash
+> git clone https://github.com/stonef1st/widgets.git \
+>   ~/.local/share/gnome-shell/extensions/widgets-uk@stonef1st
+> gnome-extensions disable widgets@distro.com   # if the original is installed
+> ```
+>
+> Log out and back in (Wayland), then enable "Widgets (UA)" in the Extensions app.
+> Both versions share one settings schema, so enable only one of them.
+>
+> Pull upstream changes: `git fetch upstream && git merge upstream/main`.
+
 **This GitHub repo (<https://github.com/TheRealSourcer/widgets>) is the official
 source for the project. Do not download releases from unverified sources.**
 
