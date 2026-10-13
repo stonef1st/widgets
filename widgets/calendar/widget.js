@@ -53,7 +53,7 @@ export function render({body, createLabel, theme}) {
 	const today = now.getDate();
 	const first = new Date(year, month, 1);
 	const days = new Date(year, month + 1, 0).getDate();
-	const start = first.getDay();
+	const start = (first.getDay() + 6) % 7;
 	const weekCount = Math.ceil((start + days) / 7);
 	const compact = weekCount === 6;
 	const cellHeight = compact ? COMPACT_CALENDAR_CELL_HEIGHT : CALENDAR_CELL_HEIGHT;
@@ -71,14 +71,14 @@ export function render({body, createLabel, theme}) {
 		style_class: 'widget-calendar-content',
 		x_align: Clutter.ActorAlign.CENTER,
 	});
-	const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+	const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 	const weekdayRow = new St.BoxLayout({style_class: 'widget-calendar-row'});
 	let day = 1;
 
 	monthLabel.x_expand = false;
 	content.add_child(monthLabel);
 	for (const [column, weekday] of weekdays.entries()) {
-		const color = column === 0 || column === 6 ? theme.muted : theme.text;
+		const color = column >= 5 ? theme.muted : theme.text;
 
 		weekdayRow.add_child(calendarCell(weekday, `color: ${color}; font-weight: 700;`, null, createLabel, cellHeight));
 	};
@@ -94,7 +94,7 @@ export function render({body, createLabel, theme}) {
 			};
 
 			const isToday = day === today;
-			const isWeekend = column === 0 || column === 6;
+			const isWeekend = column >= 5;
 			const labelStyle = isToday
 				? 'color: #ffffff; font-weight: 800;'
 				: `color: ${isWeekend ? theme.muted : theme.text};`;
