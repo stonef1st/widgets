@@ -91,6 +91,14 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 			key: 'first-day-of-week',
 		}));
 
+		const panelRow = new Adw.SwitchRow({
+			title: _('Top bar button'),
+			subtitle: _('Edit mode and adding widgets live in this button'),
+		});
+
+		settings.bind('show-panel-button', panelRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+		group.add(panelRow);
+
 		return group;
 	};
 
@@ -98,7 +106,7 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 		const group = new Adw.PreferencesGroup({title: _('Calendar')});
 		const row = new Adw.SwitchRow({
 			title: _('Show events'),
-			subtitle: _('Dots under days with events; a wide calendar also lists upcoming events. Uses the calendars from the top bar.'),
+			subtitle: _('Marks under days with events; a wide calendar also lists upcoming events. Uses the calendars from the top bar.'),
 		});
 
 		settings.bind('calendar-show-events', row, 'active', Gio.SettingsBindFlags.DEFAULT);

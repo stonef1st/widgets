@@ -199,7 +199,7 @@ class WidgetController {
   enable() {
     this._widgets = this._loadWidgets();
     this._saveWidgets();
-    this._createIndicator();
+    this._syncIndicator();
     this._createLayer();
     this._rebuildWidgets();
     this._refreshWeather(true);
@@ -521,15 +521,31 @@ class WidgetController {
     Main.panel.addToStatusArea(this._extension.uuid, this._indicator);
   };
 
+  _syncIndicator() {
+    this._indicator?.destroy();
+    this._indicator = null;
+
+    if (this._layoutSettings.get_boolean('show-panel-button')) {
+      this._createIndicator();
+    } else if (this._editMode) {
+      // Edit mode can't be turned off without the button.
+      this.setEditMode(false);
+    };
+  };
+
   _onSettingChanged(key) {
     if (key === LAYOUT_KEY) {
       return;
     };
 
+    if (key === 'show-panel-button') {
+      this._syncIndicator();
+      return;
+    };
+
     if (key === 'language') {
       setLanguage(this._layoutSettings.get_string('language'));
-      this._indicator?.destroy();
-      this._createIndicator();
+      this._syncIndicator();
       this._weatherUpdateTime = 0;
       this._refreshWeather(true);
     };

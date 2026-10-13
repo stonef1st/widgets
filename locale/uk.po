@@ -79,8 +79,8 @@ msgstr "Дані: siren.pp.ua (ukrainealarm.com). Враховуються та�
 msgid "Device"
 msgstr "Пристрій"
 
-msgid "Dots under days with events; a wide calendar also lists upcoming events. Uses the calendars from the top bar."
-msgstr "Крапки під днями з подіями; широкий календар також показує найближчі події. Використовує календарі з верхньої панелі."
+msgid "Marks under days with events; a wide calendar also lists upcoming events. Uses the calendars from the top bar."
+msgstr "Позначки під днями з подіями; широкий календар також показує найближчі події. Використовує календарі з верхньої панелі."
 
 msgid "Edit Widgets"
 msgstr "Редагувати віджети"
@@ -273,3 +273,9 @@ msgstr "Запоріжжяобленерго"
 
 msgid "Zhytomyr Oblenergo"
 msgstr "Житомиробленерго"
+
+msgid "Top bar button"
+msgstr "Кнопка на верхній панелі"
+
+msgid "Edit mode and adding widgets live in this button"
+msgstr "Через цю кнопку вмикається редагування й додаються віджети"
