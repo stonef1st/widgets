@@ -460,9 +460,12 @@ class WidgetController {
   _watchBatteryChanges() {
     const refresh = () => this._refreshBatteryViews();
     const refreshBlueZ = (_connection, _sender, _objectPath, _interfaceName, _signalName, parameters) => {
-      const [changedInterface] = parameters.deep_unpack();
+      const [changedInterface, changedProps, invalidatedProps] = parameters.deep_unpack();
+      const names = [...Object.keys(changedProps), ...invalidatedProps];
 
-      if (['org.bluez.Device1', 'org.bluez.Battery1'].includes(changedInterface)) {
+      // Device1 also fires for RSSI and other noise; only these affect the widget.
+      if (changedInterface === 'org.bluez.Battery1' ||
+          (changedInterface === 'org.bluez.Device1' && names.some(name => ['Connected', 'Alias', 'Name', 'Icon'].includes(name)))) {
         refresh();
       };
     };

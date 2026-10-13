@@ -12,6 +12,14 @@ export const stylesheet = 'widgets/battery/stylesheet.css';
 export const defaultSize = 'medium';
 
 const SLOT_COUNT = 4;
+const DBUS_TIMEOUT_MS = 1000;
+
+Gio._promisify(Gio.DBusConnection.prototype, 'call');
+
+let cachedDevices = null;
+let readInFlight = false;
+let readPending = false;
+const liveBodies = new Map();
 
 const DEVICE_TYPE = {
 	BATTERY: 2,
@@ -171,32 +179,46 @@ function isBatteryLike(props) {
 	].includes(kind);
 };
 
-function upowerCall(path, iface, method, params = null) {
-	return Gio.DBus.system.call_sync(
-		'org.freedesktop.UPower',
+function systemCall(name, path, iface, method, params = null) {
+	return Gio.DBus.system.call(
+		name,
 		path,
 		iface,
 		method,
 		params,
 		null,
 		Gio.DBusCallFlags.NONE,
-		1000,
+		DBUS_TIMEOUT_MS,
 		null);
 };
 
-function readUPowerDevices() {
+function upowerCall(path, iface, method, params = null) {
+	return systemCall('org.freedesktop.UPower', path, iface, method, params);
+};
+
+async function readUPowerProps(path) {
 	try {
-		const [paths] = upowerCall('/org/freedesktop/UPower', 'org.freedesktop.UPower', 'EnumerateDevices').deep_unpack();
+		const [props] = (await upowerCall(
+			path,
+			'org.freedesktop.DBus.Properties',
+			'GetAll',
+			GLib.Variant.new('(s)', ['org.freedesktop.UPower.Device']))).deep_unpack();
+
+		return props;
+	} catch (error) {
+		warn('upower-read-device', `Could not read UPower device ${path}: ${error.message}`);
+		return null;
+	};
+};
+
+async function readUPowerDevices() {
+	try {
+		const [paths] = (await upowerCall('/org/freedesktop/UPower', 'org.freedesktop.UPower', 'EnumerateDevices')).deep_unpack();
+		const allProps = await Promise.all(paths.map(readUPowerProps));
 		const devices = [];
 
-		for (const path of paths) {
-			const [props] = upowerCall(
-				path,
-				'org.freedesktop.DBus.Properties',
-				'GetAll',
-				GLib.Variant.new('(s)', ['org.freedesktop.UPower.Device'])).deep_unpack();
-
-			if (!isBatteryLike(props)) {
+		for (const props of allProps) {
+			if (!props || !isBatteryLike(props)) {
 				continue;
 			};
 
@@ -222,18 +244,13 @@ function readUPowerDevices() {
 	};
 };
 
-function readBlueZDevices() {
+async function readBlueZDevices() {
 	try {
-		const [objects] = Gio.DBus.system.call_sync(
+		const [objects] = (await systemCall(
 			'org.bluez',
 			'/',
 			'org.freedesktop.DBus.ObjectManager',
-			'GetManagedObjects',
-			null,
-			null,
-			Gio.DBusCallFlags.NONE,
-			1000,
-			null).deep_unpack();
+			'GetManagedObjects')).deep_unpack();
 		const devices = [];
 
 		for (const [path, interfaces] of Object.entries(objects)) {
@@ -294,8 +311,52 @@ function mergeDevices(devices) {
 	return [...merged.values()].sort((a, b) => Number(b.powerSupply) - Number(a.powerSupply) || a.name.localeCompare(b.name));
 };
 
-function readDevices() {
-	return mergeDevices([...readUPowerDevices(), ...readBlueZDevices()]);
+async function readDevices() {
+	const [upowerDevices, bluezDevices] = await Promise.all([readUPowerDevices(), readBlueZDevices()]);
+
+	return mergeDevices([...upowerDevices, ...bluezDevices]);
+};
+
+function devicesSignature(devices) {
+	return JSON.stringify((devices ?? []).map(device => [
+		device.name,
+		device.kind,
+		device.percentage,
+		device.state,
+		device.powerSupply,
+		device.iconName,
+	]));
+};
+
+// D-Bus reads are async so a slow UPower/BlueZ never blocks the shell.
+// Renders use the cached list; overlapping requests collapse into one
+// follow-up read, and views are rebuilt only when the devices changed.
+function requestDevices() {
+	if (readInFlight) {
+		readPending = true;
+		return;
+	};
+
+	readInFlight = true;
+	readDevices().then(devices => {
+		const changed = devicesSignature(devices) !== devicesSignature(cachedDevices);
+
+		cachedDevices = devices;
+		if (changed) {
+			for (const [body, context] of liveBodies) {
+				body.destroy_all_children();
+				buildTray(body, context.theme, context.createLabel);
+			};
+		};
+	}).catch(error => {
+		warn('battery-read', `Could not read batteries: ${error.message}`);
+	}).finally(() => {
+		readInFlight = false;
+		if (readPending) {
+			readPending = false;
+			requestDevices();
+		};
+	});
 };
 
 const BatteryRing = GObject.registerClass(
@@ -372,8 +433,8 @@ function createSlot(device, theme, createLabel) {
 	return slot;
 };
 
-export function render({body, createLabel, theme}) {
-	const devices = readDevices().slice(0, SLOT_COUNT);
+function buildTray(body, theme, createLabel) {
+	const devices = (cachedDevices ?? []).slice(0, SLOT_COUNT);
 	const tray = new St.BoxLayout({
 		style_class: 'widget-battery-tray',
 		x_expand: true,
@@ -386,4 +447,14 @@ export function render({body, createLabel, theme}) {
 	};
 
 	body.add_child(tray);
+};
+
+export function render({body, createLabel, theme}) {
+	if (!liveBodies.has(body)) {
+		body.connect('destroy', () => liveBodies.delete(body));
+	};
+
+	liveBodies.set(body, {theme, createLabel});
+	buildTray(body, theme, createLabel);
+	requestDevices();
 };
