@@ -1,12 +1,12 @@
 {
-  "description": "Desktop widgets: clock, calendar, weather, photos, and battery.",
-  "name": "Widgets",
+  "description": "Desktop widgets: clock, calendar, weather, photos, and battery. Fork with Ukrainian UI, Monday-first week and reworked battery icons.",
+  "name": "Widgets (UA)",
   "settings-schema": "org.gnome.shell.extensions.widgets-distro-com",
   "shell-version": [
     "48", "49", "50", "51"
   ],
-  "url": "https://github.com/TheRealSourcer/widgets",
-  "uuid": "widgets@distro.com",
+  "url": "https://github.com/stonef1st/widgets",
+  "uuid": "widgets-uk@stonef1st",
   "version": 5,
   "version-name": "0.2.3"
 }
