@@ -484,21 +484,21 @@ class WidgetController {
       style_class: 'widget-panel-icon',
     }));
 
-    const editItem = new PopupMenu.PopupSwitchMenuItem('Edit Widgets', this._editMode);
+    const editItem = new PopupMenu.PopupSwitchMenuItem('Редагувати віджети', this._editMode);
     editItem.connectObject('toggled', (_item, state) => this.setEditMode(state), this);
 
     this._indicator.menu.addMenuItem(editItem);
     this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
     for (const [type, label] of WIDGET_TYPES) {
-      const item = new PopupMenu.PopupMenuItem(`Add ${label}`);
+      const item = new PopupMenu.PopupMenuItem(`Додати: ${label}`);
       item.connectObject('activate', () => this.addWidget(type), this);
       this._indicator.menu.addMenuItem(item);
     };
 
     this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-    const resetItem = new PopupMenu.PopupMenuItem('Reset Default Widgets');
+    const resetItem = new PopupMenu.PopupMenuItem('Скинути до типових');
     resetItem.connectObject('activate', () => {
       this._widgets = cloneDefaultWidgets();
       this._saveWidgets();
@@ -708,7 +708,7 @@ class WidgetController {
       reactive: true,
       can_focus: true,
       track_hover: true,
-      accessible_name: 'Remove widget',
+      accessible_name: 'Видалити віджет',
     });
 
     this._layer.add_child(editBorder);
@@ -908,7 +908,7 @@ class WidgetController {
     const widgetModule = WIDGETS.get(widget.type);
 
     if (!widgetModule?.render) {
-      body.add_child(this._label('Unknown widget', 'widget-text'));
+      body.add_child(this._label('Невідомий віджет', 'widget-text'));
       return;
     };
 

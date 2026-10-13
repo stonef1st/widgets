@@ -7,7 +7,7 @@ import St from 'gi://St';
 import { warn } from '../../logger.js';
 
 export const type = 'weather';
-export const label = 'Weather';
+export const label = 'Погода';
 export const stylesheet = 'widgets/weather/stylesheet.css';
 export const appIds = ['org.gnome.Weather.desktop'];
 export const settingsSchema = 'org.gnome.Weather';
@@ -79,7 +79,7 @@ export function weatherFromInfo(info, location, displayName = null) {
 		summary: cleanSummary(currentInfo.get_weather_summary(), locationName),
 		location: displayName || location.get_city_name() || locationName,
 		icon: currentInfo.get_icon_name() || 'weather-clear',
-		feelsLike: apparent && apparent !== '--' ? `It feels like ${apparent}` : null,
+		feelsLike: apparent && apparent !== '--' ? `Відчувається як ${apparent}` : null,
 	};
 };
 
@@ -132,7 +132,7 @@ function formatTemperature(temperature) {
 
 function cleanSummary(summary, locationName) {
 	if (!summary) {
-		return 'Weather unavailable';
+		return 'Погода недоступна';
 	};
 
 	if (locationName && summary.startsWith(`${locationName}: `)) {
@@ -189,7 +189,7 @@ function fullColorWeatherIcon(iconName) {
 };
 
 export function render({body, widget, createLabel, theme, weather, weatherLocation}) {
-	const detail = widget.data.detail || 'Weather unavailable';
+	const detail = widget.data.detail || 'Погода недоступна';
 	const renderedWeather = weather ?? {
 		temp: formatTemperature(String(detail).split(/\s+/)[0] || '--'),
 		summary: String(detail).replace(/^\S+\s*/, '') || 'Open Weather to set a location',

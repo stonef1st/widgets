@@ -2,7 +2,7 @@ import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 
 export const type = 'calendar';
-export const label = 'Calendar';
+export const label = 'Календар';
 export const stylesheet = 'widgets/calendar/stylesheet.css';
 export const appIds = ['org.gnome.Calendar.desktop'];
 export const defaultSize = 'small';
@@ -12,10 +12,12 @@ const CALENDAR_CELL_HEIGHT = 24;
 const COMPACT_CALENDAR_CELL_HEIGHT = 23;
 
 function formatMonth(date) {
-	return date.toLocaleDateString(undefined, {
+	const text = date.toLocaleDateString('uk-UA', {
 		month: 'long',
 		year: 'numeric',
-	});
+	}).replace(/\s*р\.$/, '');
+
+	return text.charAt(0).toUpperCase() + text.slice(1);
 };
 
 function calendarCell(text, labelStyle, cellStyle, createLabel, cellHeight) {
@@ -71,7 +73,7 @@ export function render({body, createLabel, theme}) {
 		style_class: 'widget-calendar-content',
 		x_align: Clutter.ActorAlign.CENTER,
 	});
-	const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+	const weekdays = ['П', 'В', 'С', 'Ч', 'П', 'С', 'Н'];
 	const weekdayRow = new St.BoxLayout({style_class: 'widget-calendar-row'});
 	let day = 1;
 

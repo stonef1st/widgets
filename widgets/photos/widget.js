@@ -7,7 +7,7 @@ import St from 'gi://St';
 import { warn } from '../../logger.js';
 
 export const type = 'photos';
-export const label = 'Photos';
+export const label = 'Фото';
 export const stylesheet = 'widgets/photos/stylesheet.css';
 export const defaultSize = 'medium';
 

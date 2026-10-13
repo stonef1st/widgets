@@ -7,7 +7,7 @@ import St from 'gi://St';
 import { warn } from '../../logger.js';
 
 export const type = 'battery';
-export const label = 'Battery';
+export const label = 'Батарея';
 export const stylesheet = 'widgets/battery/stylesheet.css';
 export const defaultSize = 'medium';
 
@@ -129,16 +129,16 @@ function deviceName(props, kind) {
 		return vendor;
 	};
 	if (kind === DEVICE_TYPE.BATTERY) {
-		return 'Computer';
+		return 'Комп’ютер';
 	};
 	if (kind === DEVICE_TYPE.MOUSE) {
-		return 'Mouse';
+		return 'Миша';
 	};
 	if (kind === DEVICE_TYPE.KEYBOARD) {
-		return 'Keyboard';
+		return 'Клавіатура';
 	};
 
-	return 'Device';
+	return 'Пристрій';
 };
 
 function isBatteryLike(props) {
