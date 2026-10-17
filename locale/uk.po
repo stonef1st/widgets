@@ -279,3 +279,27 @@ msgstr "Кнопка на верхній панелі"
 
 msgid "Edit mode and adding widgets live in this button"
 msgstr "Через цю кнопку вмикається редагування й додаються віджети"
+
+msgid "%s d %s h"
+msgstr "%s д %s год"
+
+msgid "Claude Usage"
+msgstr "Ліміти Claude"
+
+msgid "Not started"
+msgstr "Ще не почато"
+
+msgid "Open Claude Code"
+msgstr "Відкрий Claude Code"
+
+msgid "Resets in %s"
+msgstr "Скидання через %s"
+
+msgid "Session (5 h)"
+msgstr "Сесія (5 год)"
+
+msgid "Sign-in token has expired"
+msgstr "Токен входу прострочено"
+
+msgid "Week"
+msgstr "Тиждень"

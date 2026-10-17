@@ -1,0 +1,36 @@
+.widget-claude .widget-body {
+	spacing: 0;
+}
+
+.widget-claude-tray {
+	spacing: 12px;
+}
+
+.widget-claude-slot {
+	spacing: 4px;
+}
+
+.widget-claude-gauge {
+	width: 84px;
+	height: 84px;
+	margin-bottom: 6px;
+}
+
+.widget-claude-percent {
+	font-size: 20px;
+	font-weight: 800;
+}
+
+.widget-claude-title {
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.widget-claude-reset {
+	font-size: 12px;
+}
+
+.widget-claude-message {
+	font-size: 22px;
+	font-weight: 800;
+}

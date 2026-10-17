@@ -1,11 +1,11 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import { warn } from '../../logger.js';
 import { _ } from '../../i18n.js';
+import { ProgressRing, RING_COLORS } from '../../ring.js';
 
 export const type = 'battery';
 export const label = 'Battery';
@@ -50,15 +50,19 @@ function variantValue(props, name, fallback = null) {
 	return props[name] ? props[name].deep_unpack() : fallback;
 };
 
-function batteryColor(percentage) {
-	if (percentage <= 20) {
-		return [0.93, 0.21, 0.25];
+// Green while on AC, otherwise accent above 50%, yellow below 50%, red below 30%.
+function batteryColor(device, theme) {
+	if ([UPOWER_STATE.CHARGING, UPOWER_STATE.FULLY_CHARGED].includes(device?.state)) {
+		return RING_COLORS.green;
 	};
-	if (percentage <= 40) {
-		return [0.95, 0.68, 0.19];
+	if (device?.percentage < 30) {
+		return RING_COLORS.red;
+	};
+	if (device?.percentage < 50) {
+		return RING_COLORS.yellow;
 	};
 
-	return [0.34, 0.89, 0.54];
+	return theme.accent;
 };
 
 function normalizeName(name) {
@@ -360,45 +364,6 @@ function requestDevices() {
 	});
 };
 
-const BatteryRing = GObject.registerClass(
-	class BatteryRing extends St.DrawingArea {
-		_init(device, theme) {
-			super._init({style_class: 'widget-battery-ring'});
-			this._percentage = device?.percentage ?? null;
-			this._ringColor = batteryColor(this._percentage);
-			this._trackColor = theme?.dark ? [1, 1, 1, 0.16] : [0, 0, 0, 0.11];
-		};
-
-		vfunc_repaint() {
-			const cr = this.get_context();
-			const [width, height] = this.get_surface_size();
-
-			if (width <= 0 || height <= 0) {
-				cr.$dispose();
-				return;
-			};
-
-			const lineWidth = 7;
-			const radius = Math.min(width, height) / 2 - lineWidth / 2 - 1;
-			const centerX = width / 2;
-			const centerY = height / 2;
-
-			cr.setLineCap(1);
-			cr.setLineWidth(lineWidth);
-			cr.arc(centerX, centerY, radius, 0, Math.PI * 2);
-			cr.setSourceRGBA(...this._trackColor);
-			cr.stroke();
-
-			if (Number.isFinite(this._percentage)) {
-				cr.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (this._percentage / 100));
-				cr.setSourceRGBA(...this._ringColor, 1);
-				cr.stroke();
-			};
-
-			cr.$dispose();
-		};
-	});
-
 export function style(theme) {
 	return `background-color: ${theme.background}; border-color: ${theme.border}; color: ${theme.text};`;
 };
@@ -411,7 +376,7 @@ function createSlot(device, theme, createLabel) {
 		x_align: Clutter.ActorAlign.CENTER,
 	});
 	const gauge = new St.Widget({style_class: 'widget-battery-gauge'});
-	const ring = new BatteryRing(device, theme);
+	const ring = new ProgressRing(device?.percentage ?? null, batteryColor(device, theme), theme);
 	const icon = new St.Icon({
 		icon_name: iconForDevice(device),
 		style_class: 'widget-battery-icon',

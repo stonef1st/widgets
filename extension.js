@@ -12,6 +12,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as AlertsWidget from './widgets/alerts/widget.js';
 import * as BatteryWidget from './widgets/battery/widget.js';
 import * as CalendarWidget from './widgets/calendar/widget.js';
+import * as ClaudeWidget from './widgets/claude/widget.js';
 import * as ClockWidget from './widgets/clock/widget.js';
 import * as PhotosWidget from './widgets/photos/widget.js';
 import * as PowerWidget from './widgets/power/widget.js';
@@ -38,6 +39,7 @@ const WIDGET_MODULES = [
   BatteryWidget,
   AlertsWidget,
   PowerWidget,
+  ClaudeWidget,
 ];
 const WIDGETS = new Map(WIDGET_MODULES.map(widgetModule => [widgetModule.type, widgetModule]));
 const WIDGET_TYPES = WIDGET_MODULES.map(widgetModule => [widgetModule.type, widgetModule.label]);

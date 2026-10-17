@@ -13,13 +13,25 @@ export function createSession() {
 	});
 };
 
-export async function fetchJson(session, url, cancellable = null) {
+export class HttpError extends Error {
+	constructor(status, url) {
+		super(`HTTP ${status} for ${url}`);
+		this.status = status;
+	};
+};
+
+export async function fetchJson(session, url, cancellable = null, headers = {}) {
 	const message = Soup.Message.new('GET', url);
+
+	for (const [name, value] of Object.entries(headers)) {
+		message.get_request_headers().append(name, value);
+	};
+
 	const bytes = await session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, cancellable);
 	const status = message.get_status();
 
 	if (status !== Soup.Status.OK) {
-		throw new Error(`HTTP ${status} for ${url}`);
+		throw new HttpError(status, url);
 	};
 
 	return JSON.parse(new TextDecoder().decode(bytes.get_data()));
