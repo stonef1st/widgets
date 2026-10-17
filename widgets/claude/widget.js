@@ -22,6 +22,8 @@ const CREDENTIALS_PATH = GLib.build_filenamev([GLib.get_home_dir(), '.claude', '
 const COMPACT_MAX_WIDTH = 300;
 const FETCH_SECONDS = 5 * 60;
 const RENDER_SECONDS = 60;
+// Claude Code may write the credentials several times in a row.
+const CREDENTIALS_DEBOUNCE_MS = 1500;
 const LIMITS = [
 	['five_hour', 'Session (5 h)'],
 	['seven_day', 'Week'],
@@ -34,6 +36,8 @@ const state = {
 	cancellable: null,
 	fetchId: 0,
 	renderId: 0,
+	monitor: null,
+	monitorDebounceId: 0,
 	fetching: false,
 	data: null,
 	// null | 'login' (no usable token) | 'error'
@@ -119,17 +123,50 @@ function start() {
 		rerender();
 		return GLib.SOURCE_CONTINUE;
 	});
+	watchCredentials();
 	fetchData();
 };
 
+// Refetch as soon as Claude Code refreshes the token instead of waiting for
+// the next poll. The parent directory is watched because the file is
+// replaced by a rename, which a monitor on the file itself can miss.
+function watchCredentials() {
+	const credentials = Gio.File.new_for_path(CREDENTIALS_PATH);
+	const name = credentials.get_basename();
+
+	try {
+		state.monitor = credentials.get_parent().monitor_directory(Gio.FileMonitorFlags.WATCH_MOVES, null);
+	} catch (error) {
+		warn('claude-credentials', `Could not watch Claude credentials: ${error.message}`);
+		return;
+	};
+
+	state.monitor.connect('changed', (_monitor, file, otherFile, eventType) => {
+		if (eventType === Gio.FileMonitorEvent.DELETED || ![file, otherFile].some(item => item?.get_basename() === name)) {
+			return;
+		};
+
+		if (state.monitorDebounceId) {
+			GLib.source_remove(state.monitorDebounceId);
+		};
+		state.monitorDebounceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, CREDENTIALS_DEBOUNCE_MS, () => {
+			state.monitorDebounceId = 0;
+			fetchData();
+			return GLib.SOURCE_REMOVE;
+		});
+	});
+};
+
 function stop() {
-	for (const key of ['fetchId', 'renderId']) {
+	for (const key of ['fetchId', 'renderId', 'monitorDebounceId']) {
 		if (state[key]) {
 			GLib.source_remove(state[key]);
 			state[key] = 0;
 		};
 	};
 
+	state.monitor?.cancel();
+	state.monitor = null;
 	state.cancellable?.cancel();
 	state.cancellable = null;
 	state.session?.abort();
