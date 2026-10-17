@@ -25,18 +25,25 @@
 }
 
 .widget-power-strip {
-	spacing: 1px;
 	margin-top: 8px;
 	height: 14px;
 }
 
-.widget-power-slot {
+.widget-power-hour {
 	border-radius: 2px;
-	min-width: 2px;
 }
 
-.widget-power-slot-current {
+.widget-power-hour-current {
 	border-width: 1px;
+	padding: 1px;
+}
+
+.widget-power-slot-first {
+	border-radius: 2px 0 0 2px;
+}
+
+.widget-power-slot-second {
+	border-radius: 0 2px 2px 0;
 }
 
 .widget-power-scale-label {

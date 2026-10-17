@@ -1,6 +1,7 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import { _, format, intlLocale } from '../../i18n.js';
@@ -162,38 +163,137 @@ function nextLabel(status) {
 	};
 };
 
-function buildStrip(slots, currentSlot, theme) {
-	const strip = new St.BoxLayout({
-		style_class: 'widget-power-strip',
-		x_expand: true,
+const HOURS_PER_DAY = 24;
+const SCALE_HOURS = [0, 6, 12, 18, 24];
+
+// Whole-pixel bar width, so every hour bar is exactly the same size. The gap
+// is picked per width to leave the smallest remainder, which is then split
+// evenly on both sides.
+function stripGeometry(width) {
+	let best = null;
+
+	for (const gap of [2, 1, 3]) {
+		const bar = Math.floor((width - gap * (HOURS_PER_DAY - 1)) / HOURS_PER_DAY);
+
+		if (bar < 1) {
+			continue;
+		};
+
+		const used = bar * HOURS_PER_DAY + gap * (HOURS_PER_DAY - 1);
+
+		if (!best || width - used < best.rest) {
+			best = {bar, gap, rest: width - used};
+		};
+	};
+
+	best ??= {bar: 1, gap: 0, rest: Math.max(0, width - HOURS_PER_DAY)};
+	best.offset = Math.floor(best.rest / 2);
+	return best;
+};
+
+const HourStripLayout = GObject.registerClass(
+	class HourStripLayout extends Clutter.LayoutManager {
+		vfunc_get_preferred_width(_container, _forHeight) {
+			return [HOURS_PER_DAY, HOURS_PER_DAY * 4];
+		}
+
+		vfunc_get_preferred_height(container, forWidth) {
+			let [min, nat] = [0, 0];
+
+			for (const child of container) {
+				const [childMin, childNat] = child.get_preferred_height(-1);
+
+				min = Math.max(min, childMin);
+				nat = Math.max(nat, childNat);
+			};
+
+			return [min, nat];
+		}
+
+		vfunc_allocate(container, box) {
+			const {bar, gap, offset} = stripGeometry(Math.floor(box.get_width()));
+			const children = [...container];
+
+			children.forEach((child, index) => {
+				const childBox = new Clutter.ActorBox();
+				const x = box.x1 + offset + index * (bar + gap);
+
+				childBox.set_origin(x, box.y1);
+				childBox.set_size(bar, box.get_height());
+				child.allocate(childBox);
+			});
+		}
 	});
 
-	for (let index = 0; index < SLOTS_PER_DAY; index++) {
-		const color = SLOT_COLORS[slots[index]] ?? theme.border;
-		const current = index === currentSlot;
+// Places the hour labels under the matching gaps of the strip above.
+const HourScaleLayout = GObject.registerClass(
+	class HourScaleLayout extends HourStripLayout {
+		vfunc_allocate(container, box) {
+			const {bar, gap, offset} = stripGeometry(Math.floor(box.get_width()));
+			const step = bar + gap;
+			const end = offset + step * HOURS_PER_DAY - gap;
 
-		strip.add_child(new St.Widget({
-			style_class: current ? 'widget-power-slot widget-power-slot-current' : 'widget-power-slot',
-			style: `background-color: ${color};${current ? ` border-color: ${theme.text};` : ''}`,
-			x_expand: true,
-		}));
+			[...container].forEach((child, index) => {
+				const hour = SCALE_HOURS[index];
+				const [, width] = child.get_preferred_width(-1);
+				const [, height] = child.get_preferred_height(width);
+				let x = offset + hour * step - gap / 2 - width / 2;
+
+				if (hour === 0) {
+					x = offset;
+				} else if (hour === HOURS_PER_DAY) {
+					x = end - width;
+				};
+
+				const childBox = new Clutter.ActorBox();
+
+				childBox.set_origin(Math.round(box.x1 + x), box.y1);
+				childBox.set_size(width, height);
+				child.allocate(childBox);
+			});
+		}
+	});
+
+function buildStrip(slots, currentSlot, theme) {
+	const strip = new St.Widget({
+		style_class: 'widget-power-strip',
+		layout_manager: new HourStripLayout(),
+		x_expand: true,
+	});
+	const currentHour = Math.floor(currentSlot / 2);
+
+	// Each hour bar holds two half-hour slots, so half-hour outages stay visible.
+	for (let hour = 0; hour < SLOTS_PER_DAY / 2; hour++) {
+		const current = hour === currentHour;
+		const hourBar = new St.BoxLayout({
+			style_class: current ? 'widget-power-hour widget-power-hour-current' : 'widget-power-hour',
+			style: current ? `border-color: ${theme.text};` : '',
+		});
+
+		for (const [half, slot] of [['first', hour * 2], ['second', hour * 2 + 1]]) {
+			hourBar.add_child(new St.Widget({
+				style_class: `widget-power-slot widget-power-slot-${half}`,
+				style: `background-color: ${SLOT_COLORS[slots[slot]] ?? theme.border};`,
+				x_expand: true,
+				y_expand: true,
+			}));
+		};
+
+		strip.add_child(hourBar);
 	};
 
 	return strip;
 };
 
 function buildScale(createLabel, theme) {
-	const scale = new St.BoxLayout({
+	const scale = new St.Widget({
 		style_class: 'widget-power-scale',
+		layout_manager: new HourScaleLayout(),
 		x_expand: true,
 	});
 
-	for (const hour of ['0', '6', '12', '18', '24']) {
-		const labelActor = createLabel(hour, 'widget-power-scale-label', `color: ${theme.muted};`);
-
-		labelActor.x_expand = true;
-		labelActor.x_align = hour === '24' ? Clutter.ActorAlign.END : Clutter.ActorAlign.START;
-		scale.add_child(labelActor);
+	for (const hour of SCALE_HOURS) {
+		scale.add_child(createLabel(String(hour), 'widget-power-scale-label', `color: ${theme.muted};`));
 	};
 
 	return scale;
