@@ -18,6 +18,8 @@ export const optional = true;
 // response shape may change without notice.
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
 const CREDENTIALS_PATH = GLib.build_filenamev([GLib.get_home_dir(), '.claude', '.credentials.json']);
+// Narrower cards only have room for the session ring.
+const COMPACT_MAX_WIDTH = 300;
 const FETCH_SECONDS = 5 * 60;
 const RENDER_SECONDS = 60;
 const LIMITS = [
@@ -210,7 +212,7 @@ function createSlot(limit, title, theme, createLabel) {
 	return slot;
 };
 
-function build(body, {createLabel, theme}) {
+function build(body, {createLabel, theme, widget, sizeForWidget}) {
 	if (!state.data || state.problem === 'login') {
 		const message = new St.BoxLayout({
 			orientation: Clutter.Orientation.VERTICAL,
@@ -239,7 +241,10 @@ function build(body, {createLabel, theme}) {
 		y_align: Clutter.ActorAlign.CENTER,
 	});
 
-	for (const [key, title] of LIMITS) {
+	const [width] = sizeForWidget?.(widget) ?? [Infinity];
+	const limits = width < COMPACT_MAX_WIDTH ? LIMITS.slice(0, 1) : LIMITS;
+
+	for (const [key, title] of limits) {
 		tray.add_child(createSlot(state.data[key], title, theme, createLabel));
 	};
 
