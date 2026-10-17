@@ -21,6 +21,21 @@
   height: 84px;
 }
 
+.widget-battery-grid,
+.widget-battery-grid-row {
+  spacing: 16px;
+}
+
+.widget-battery-grid .widget-battery-gauge,
+.widget-battery-grid .widget-ring {
+  width: 72px;
+  height: 72px;
+}
+
+.widget-battery-grid .widget-battery-icon {
+  icon-size: 26px;
+}
+
 .widget-battery-icon {
   icon-size: 30px;
 }

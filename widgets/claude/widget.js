@@ -40,6 +40,11 @@ const state = {
 	problem: null,
 };
 const liveBodies = new Map();
+// Current page of each narrow card, by widget id; kept across rerenders.
+const pages = new Map();
+// Touchpads send a burst of smooth-scroll events per swipe.
+const FLIP_COOLDOWN_MS = 400;
+let lastFlip = 0;
 
 // The token is only read here, never refreshed: refreshing rotates the
 // refresh token and would log Claude Code out.
@@ -242,13 +247,72 @@ function build(body, {createLabel, theme, widget, sizeForWidget}) {
 	});
 
 	const [width] = sizeForWidget?.(widget) ?? [Infinity];
-	const limits = width < COMPACT_MAX_WIDTH ? LIMITS.slice(0, 1) : LIMITS;
 
-	for (const [key, title] of limits) {
+	if (width < COMPACT_MAX_WIDTH) {
+		buildPager(body, tray, {createLabel, theme, widget});
+		return;
+	};
+
+	for (const [key, title] of LIMITS) {
 		tray.add_child(createSlot(state.data[key], title, theme, createLabel));
 	};
 
 	body.add_child(tray);
+};
+
+// Narrow cards show one limit at a time; scrolling over the card flips pages.
+function buildPager(body, tray, {createLabel, theme, widget}) {
+	const page = pages.get(widget.id) ?? 0;
+	const [key, title] = LIMITS[page];
+	const indicator = new St.BoxLayout({
+		style_class: 'widget-claude-pages',
+		x_align: Clutter.ActorAlign.CENTER,
+	});
+
+	tray.add_child(createSlot(state.data[key], title, theme, createLabel));
+
+	for (let index = 0; index < LIMITS.length; index++) {
+		indicator.add_child(new St.Widget({
+			style_class: 'widget-claude-page-dot',
+			style: `background-color: ${index === page ? theme.accent : theme.muted};`,
+		}));
+	};
+
+	tray.reactive = true;
+	tray.connect('scroll-event', (_actor, event) => {
+		const step = scrollStep(event);
+
+		if (step === 0 || Date.now() - lastFlip < FLIP_COOLDOWN_MS) {
+			return Clutter.EVENT_STOP;
+		};
+
+		lastFlip = Date.now();
+		pages.set(widget.id, (page + step + LIMITS.length) % LIMITS.length);
+		rerender();
+		return Clutter.EVENT_STOP;
+	});
+
+	body.add_child(tray);
+	body.add_child(indicator);
+};
+
+function scrollStep(event) {
+	switch (event.get_scroll_direction()) {
+		case Clutter.ScrollDirection.UP:
+		case Clutter.ScrollDirection.LEFT:
+			return -1;
+		case Clutter.ScrollDirection.DOWN:
+		case Clutter.ScrollDirection.RIGHT:
+			return 1;
+		case Clutter.ScrollDirection.SMOOTH: {
+			const [dx, dy] = event.get_scroll_delta();
+			const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+
+			return Math.abs(delta) < 0.5 ? 0 : Math.sign(delta);
+		};
+		default:
+			return 0;
+	};
 };
 
 export function render(context) {

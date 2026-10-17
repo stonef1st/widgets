@@ -13,6 +13,12 @@ export const stylesheet = 'widgets/battery/stylesheet.css';
 export const defaultSize = 'medium';
 
 const SLOT_COUNT = 4;
+const RING_SIZE = 84;
+const ICON_SIZE = 30;
+const GRID_RING_SIZE = 72;
+const GRID_ICON_SIZE = 26;
+// Narrower cards switch to the 2x2 grid when there are more than two devices.
+const COMPACT_MAX_WIDTH = 300;
 const DBUS_TIMEOUT_MS = 1000;
 
 Gio._promisify(Gio.DBusConnection.prototype, 'call');
@@ -350,7 +356,7 @@ function requestDevices() {
 		if (changed) {
 			for (const [body, context] of liveBodies) {
 				body.destroy_all_children();
-				buildTray(body, context.theme, context.createLabel);
+				buildTray(body, context);
 			};
 		};
 	}).catch(error => {
@@ -368,7 +374,7 @@ export function style(theme) {
 	return `background-color: ${theme.background}; border-color: ${theme.border}; color: ${theme.text};`;
 };
 
-function createSlot(device, theme, createLabel) {
+function createSlot(device, theme, createLabel, grid = false) {
 	const slot = new St.BoxLayout({
 		orientation: Clutter.Orientation.VERTICAL,
 		style_class: 'widget-battery-slot',
@@ -382,14 +388,20 @@ function createSlot(device, theme, createLabel) {
 		style_class: 'widget-battery-icon',
 		style: `color: ${device ? theme.text : theme.muted};`,
 	});
+	const [ringSize, iconSize] = grid ? [GRID_RING_SIZE, GRID_ICON_SIZE] : [RING_SIZE, ICON_SIZE];
 
-	gauge.set_size(84, 84);
-	ring.set_size(84, 84);
-	icon.set_size(30, 30);
-	icon.set_position(27, 27);
+	gauge.set_size(ringSize, ringSize);
+	ring.set_size(ringSize, ringSize);
+	icon.set_size(iconSize, iconSize);
+	icon.set_position((ringSize - iconSize) / 2, (ringSize - iconSize) / 2);
 	gauge.add_child(ring);
 	gauge.add_child(icon);
 	slot.add_child(gauge);
+
+	// The ring color already tells the level, so the grid drops the labels.
+	if (grid) {
+		return slot;
+	};
 
 	const label = createLabel(device ? `${device.percentage}%` : '', 'widget-battery-percent', `color: ${device ? theme.text : theme.muted};`);
 
@@ -399,8 +411,42 @@ function createSlot(device, theme, createLabel) {
 	return slot;
 };
 
-function buildTray(body, theme, createLabel) {
+// Narrow card with more than two devices: 2x2 grid of label-less rings.
+function buildGrid(body, devices, theme, createLabel) {
+	const grid = new St.BoxLayout({
+		orientation: Clutter.Orientation.VERTICAL,
+		style_class: 'widget-battery-grid',
+		x_expand: true,
+		y_expand: true,
+		x_align: Clutter.ActorAlign.CENTER,
+		y_align: Clutter.ActorAlign.CENTER,
+	});
+
+	for (let index = 0; index < devices.length; index += 2) {
+		const row = new St.BoxLayout({
+			style_class: 'widget-battery-grid-row',
+			x_align: Clutter.ActorAlign.CENTER,
+		});
+
+		for (const device of devices.slice(index, index + 2)) {
+			row.add_child(createSlot(device, theme, createLabel, true));
+		};
+
+		grid.add_child(row);
+	};
+
+	body.add_child(grid);
+};
+
+function buildTray(body, {theme, createLabel, widget, sizeForWidget}) {
 	const devices = (cachedDevices ?? []).slice(0, SLOT_COUNT);
+	const [width] = sizeForWidget?.(widget) ?? [Infinity];
+
+	if (width < COMPACT_MAX_WIDTH && devices.length > 2) {
+		buildGrid(body, devices, theme, createLabel);
+		return;
+	};
+
 	const tray = new St.BoxLayout({
 		style_class: 'widget-battery-tray',
 		x_expand: true,
@@ -420,13 +466,15 @@ function buildTray(body, theme, createLabel) {
 	body.add_child(tray);
 };
 
-export function render({body, createLabel, theme}) {
+export function render(context) {
+	const {body} = context;
+
 	if (!liveBodies.has(body)) {
 		body.connect('destroy', () => liveBodies.delete(body));
 	};
 
-	liveBodies.set(body, {theme, createLabel});
-	buildTray(body, theme, createLabel);
+	liveBodies.set(body, context);
+	buildTray(body, context);
 	requestDevices();
 };
 

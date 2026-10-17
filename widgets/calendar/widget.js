@@ -19,6 +19,7 @@ const COMPACT_CALENDAR_CELL_HEIGHT = 23;
 const WIDE_CALENDAR_MIN_WIDTH = 400;
 const UPCOMING_DAYS = 14;
 const UPCOMING_LIMIT = 4;
+const MAX_EVENT_DOTS = 2;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const liveBodies = new Map();
@@ -107,7 +108,7 @@ export function cleanup() {
 	};
 };
 
-function calendarCell(text, labelStyle, cellStyle, createLabel, cellHeight, dotColor = null) {
+function calendarCell(text, labelStyle, cellStyle, createLabel, cellHeight, dotColor = null, dotCount = 0) {
 	const cellParams = {
 		style_class: 'widget-calendar-cell',
 		layout_manager: new Clutter.BinLayout(),
@@ -141,12 +142,21 @@ function calendarCell(text, labelStyle, cellStyle, createLabel, cellHeight, dotC
 		y_align: Clutter.ActorAlign.CENTER,
 	});
 
-	stack.add_child(labelActor);
-	stack.add_child(new St.Widget({
-		style_class: 'widget-calendar-event-dot',
-		style: `background-color: ${dotColor};`,
+	const dots = new St.BoxLayout({
+		style_class: 'widget-calendar-event-dots',
 		x_align: Clutter.ActorAlign.CENTER,
-	}));
+	});
+
+	// Empty days get one transparent dot so the row height stays the same.
+	for (let index = 0; index < Math.max(1, dotCount); index++) {
+		dots.add_child(new St.Widget({
+			style_class: 'widget-calendar-event-dot',
+			style: `background-color: ${dotCount > 0 ? dotColor : 'transparent'};`,
+		}));
+	};
+
+	stack.add_child(labelActor);
+	stack.add_child(dots);
 	cell.add_child(stack);
 
 	return cell;
@@ -280,11 +290,10 @@ function buildMonth(context, source, firstDay) {
 			const cellStyle = isToday
 				? `background-color: ${theme.accent}; border-radius: 999px;`
 				: null;
-			const hasEvents = source?.hasEvents(new Date(year, month, day)) ?? false;
-			// Transparent marker on empty days keeps digits on one line across the row.
-			const dotColor = hasEvents ? (isToday ? '#ffffff' : theme.accent) : 'transparent';
+			const dotCount = Math.min(MAX_EVENT_DOTS, source?.getEvents(new Date(year, month, day), new Date(year, month, day, 23, 59, 59, 999)).length ?? 0);
+			const dotColor = isToday ? '#ffffff' : theme.accent;
 
-			row.add_child(calendarCell(String(day), labelStyle, cellStyle, createLabel, cellHeight, dotColor));
+			row.add_child(calendarCell(String(day), labelStyle, cellStyle, createLabel, cellHeight, dotColor, dotCount));
 			day++;
 		};
 

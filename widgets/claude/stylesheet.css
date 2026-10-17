@@ -30,6 +30,16 @@
 	font-size: 12px;
 }
 
+.widget-claude-pages {
+	spacing: 5px;
+}
+
+.widget-claude-page-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 3px;
+}
+
 .widget-claude-message {
 	font-size: 22px;
 	font-weight: 800;
