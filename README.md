@@ -10,7 +10,9 @@
 >   of the session locale (Ukrainian included).
 > - Calendar: events from the top bar calendars (dots under days, upcoming
 >   list on a wide calendar), configurable first day of week.
-> - Edit mode: size button (small → medium → large).
+> - Edit mode: size button (small → medium → large, skipping sizes with no
+>   room). Dragging and resizing never move the other widgets; a widget dropped
+>   on another one takes the nearest free spot.
 > - New optional widgets: air raid alerts (siren.pp.ua / ukrainealarm.com,
 >   with notifications) and power outage schedule
 >   ([OE_OUTAGE_DATA](https://github.com/yaroslav2901/OE_OUTAGE_DATA)).

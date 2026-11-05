@@ -621,12 +621,46 @@ class WidgetController {
       return;
     };
 
-    const sizes = Object.keys(WIDGET_SIZES);
+    const size = this._nextFittingSize(widget);
 
-    widget.size = sizes[(sizes.indexOf(widget.size) + 1) % sizes.length];
-    [widget.width, widget.height] = WIDGET_SIZES[widget.size];
+    if (!size) {
+      return;
+    };
+
+    widget.size = size;
+    [widget.width, widget.height] = WIDGET_SIZES[size];
     this._saveWidgets();
     this._rebuildWidgets();
+  };
+
+  // A resize never moves anything: sizes that do not fit where the widget
+  // stands are skipped, so a medium widget with no room to grow goes back to
+  // small rather than getting stuck. Returns null when no other size fits.
+  _nextFittingSize(widget) {
+    const sizes = Object.keys(WIDGET_SIZES);
+    const current = sizes.indexOf(widget.size);
+
+    for (let step = 1; step < sizes.length; step++) {
+      const size = sizes[(current + step) % sizes.length];
+
+      if (this._sizeFits(widget, ...WIDGET_SIZES[size])) {
+        return size;
+      };
+    };
+
+    return null;
+  };
+
+  _sizeFits(widget, width, height) {
+    const monitor = Main.layoutManager.primaryMonitor;
+
+    if (!monitor || widget.x + width + WIDGET_GAP > monitor.width || widget.y + height + WIDGET_GAP > monitor.height) {
+      return false;
+    };
+
+    const rect = {x: widget.x, y: widget.y, width, height};
+
+    return !this._widgets.some(other => other !== widget && rectsOverlap(rect, rectForWidget(other)));
   };
 
   removeWidget(id) {
@@ -928,9 +962,11 @@ class WidgetController {
         return;
       };
 
+      const {actorX, actorY} = drag;
+
       drag = null;
       this._clampWidget(widget);
-      this._resolveLayout(widget, true, false);
+      this._placeDropped(widget, actorX, actorY);
       this._animateWidget(widget, true);
       this._cancelActiveDrag();
       this._saveWidgets();
@@ -950,7 +986,6 @@ class WidgetController {
       widget.y = clamp(snap(drag.actorY + stageY - drag.stageY), minY, Math.max(minY, monitor.height - height - WIDGET_GAP));
       actor.set_position(widget.x, widget.y);
       this._syncEditControls(widget);
-      this._resolveLayout(widget, false, false);
     };
 
     actor.connectObject('button-press-event', (_source, event) => {
@@ -1112,6 +1147,20 @@ class WidgetController {
     const rect = {x, y, width, height};
 
     return !blockingWidgets.some(other => other !== widget && rectsOverlap(rect, rectForWidget(other)));
+  };
+
+  // A dropped widget never moves the others: on top of one it takes the
+  // nearest free spot, and with no room it returns to where it came from.
+  _placeDropped(widget, startX, startY) {
+    if (this._positionIsFreeAgainst(widget, widget.x, widget.y, this._widgets)) {
+      return;
+    };
+
+    const {x, y} = this._findOpenPosition(widget, this._widgets);
+    const isFree = this._positionIsFreeAgainst(widget, x, y, this._widgets);
+
+    widget.x = isFree ? x : startX;
+    widget.y = isFree ? y : startY;
   };
 
   _findOpenPosition(widget, blockingWidgets = []) {
