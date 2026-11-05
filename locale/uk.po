@@ -280,6 +280,21 @@ msgstr "Показувати на верхній панелі"
 msgid "Icon and temperature"
 msgstr "Значок і температура"
 
+msgid "Only in the hour before an event with a set time"
+msgstr "Лише за годину до події із зазначеним часом"
+
+msgid "Only before and during an outage"
+msgstr "Лише перед відключенням і під час нього"
+
+msgid "until %s"
+msgstr "до %s"
+
+msgid "none"
+msgstr "немає"
+
+msgid "no schedule"
+msgstr "немає графіка"
+
 msgid "Icon and the limit closest to running out"
 msgstr "Значок і ліміт, найближчий до вичерпання"
 

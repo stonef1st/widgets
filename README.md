@@ -21,8 +21,10 @@
 > - Weather: icon matches the text when only forecast data has sky info.
 > - Top bar items, each optional and placed left, center or right in
 >   preferences: weather (symbolic icon and temperature), air raid alerts
->   (shown only during an alert or while the service is unavailable) and
->   Claude usage (the limit closest to running out, a click lists both).
+>   (shown only during an alert or while the service is unavailable), power
+>   outages (shown only before and during one), Claude usage (the limit closest
+>   to running out, a click lists both) and the next event (shown only in the
+>   hour before it).
 >
 > Install:
 >

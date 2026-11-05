@@ -21,10 +21,20 @@ const UPCOMING_DAYS = 14;
 const UPCOMING_LIMIT = 4;
 const MAX_EVENT_DOTS = 2;
 const DAY_MS = 24 * 60 * 60 * 1000;
+// How long before a timed event the top bar item appears, and turns accent.
+const PANEL_AHEAD_MINUTES = 60;
+const PANEL_SOON_MINUTES = 10;
+const PANEL_REFRESH_SECONDS = 30;
+const PANEL_TITLE_LENGTH = 24;
+const MENU_TITLE_LENGTH = 48;
+const MENU_EVENTS = 6;
 
 const liveBodies = new Map();
+const listeners = new Set();
 let watchedSource = null;
 let rerenderId = 0;
+let panelTimerId = 0;
+let panelSettings = null;
 
 function capitalize(text) {
 	return text.charAt(0).toUpperCase() + text.slice(1);
@@ -83,8 +93,96 @@ function scheduleRerender() {
 			build(body, context);
 		};
 
+		notifyListeners();
 		return GLib.SOURCE_REMOVE;
 	});
+};
+
+function notifyListeners() {
+	const summary = panelSummary();
+
+	for (const listener of listeners) {
+		listener(summary);
+	};
+};
+
+function shorten(text, length) {
+	return text.length > length ? `${text.slice(0, length - 1).trimEnd()}…` : text;
+};
+
+function clockLabel(date) {
+	return date.toLocaleTimeString(intlLocale(), {hour: '2-digit', minute: '2-digit'});
+};
+
+function eventMenuLine(event) {
+	const time = isAllDay(event) ? _('All day') : clockLabel(event.date);
+
+	return `${time}  ${shorten(event.summary || _('Untitled event'), MENU_TITLE_LENGTH)}`;
+};
+
+// null unless a timed event starts soon. {time, title, soon, lines}
+function panelSummary() {
+	const source = panelSettings?.get_boolean('calendar-show-events') ? shellEventSource() : null;
+
+	if (!source) {
+		return null;
+	};
+
+	watchEventSource(source);
+
+	const now = new Date();
+	const byStart = (a, b) => a.date - b.date;
+	const next = [...source.getEvents(now, new Date(now.getTime() + DAY_MS))]
+		.sort(byStart)
+		.find(event => event.date > now && !isAllDay(event));
+	const minutes = next ? (next.date - now) / 60000 : Infinity;
+
+	if (minutes > PANEL_AHEAD_MINUTES) {
+		return null;
+	};
+
+	const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	const dayEnd = new Date(dayStart.getTime() + DAY_MS);
+	const today = [...source.getEvents(dayStart, dayEnd)]
+		.filter(event => event.end > now)
+		.sort(byStart)
+		.slice(0, MENU_EVENTS);
+
+	return {
+		time: clockLabel(next.date),
+		title: shorten(next.summary || _('Untitled event'), PANEL_TITLE_LENGTH),
+		soon: minutes <= PANEL_SOON_MINUTES,
+		// An event right after midnight is not in today's list.
+		lines: (today.length > 0 ? today : [next]).map(eventMenuLine),
+	};
+};
+
+function stopPanelTimer() {
+	if (panelTimerId) {
+		GLib.source_remove(panelTimerId);
+		panelTimerId = 0;
+	};
+};
+
+// The listener gets the summary now and whenever it may have changed.
+// Returns the unsubscribe.
+export function subscribe(settings, listener) {
+	panelSettings = settings;
+	listeners.add(listener);
+	listener(panelSummary());
+
+	panelTimerId ||= GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, PANEL_REFRESH_SECONDS, () => {
+		notifyListeners();
+		return GLib.SOURCE_CONTINUE;
+	});
+
+	return () => {
+		listeners.delete(listener);
+
+		if (listeners.size === 0) {
+			stopPanelTimer();
+		};
+	};
 };
 
 function watchEventSource(source) {
@@ -101,6 +199,9 @@ export function cleanup() {
 	watchedSource?.disconnectObject?.(liveBodies);
 	watchedSource = null;
 	liveBodies.clear();
+	listeners.clear();
+	panelSettings = null;
+	stopPanelTimer();
 
 	if (rerenderId) {
 		GLib.source_remove(rerenderId);

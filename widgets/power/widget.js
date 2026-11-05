@@ -36,6 +36,11 @@ const state = {
 	settings: null,
 };
 const liveBodies = new Map();
+const listeners = new Set();
+
+// How long before an outage the top bar item appears, and turns yellow.
+const PANEL_AHEAD_MINUTES = 120;
+const PANEL_SOON_MINUTES = 30;
 
 function formatTime(date) {
 	return date.toLocaleTimeString(intlLocale(), {hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv'});
@@ -88,7 +93,7 @@ function start(settings) {
 	});
 	// The schedule moves with the clock even without new data.
 	state.renderId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, RENDER_SECONDS, () => {
-		if (liveBodies.size === 0) {
+		if (liveBodies.size === 0 && listeners.size === 0) {
 			stop();
 			return GLib.SOURCE_REMOVE;
 		};
@@ -117,6 +122,7 @@ function stop() {
 export function cleanup() {
 	stop();
 	liveBodies.clear();
+	listeners.clear();
 	state.settings = null;
 };
 
@@ -124,6 +130,91 @@ function rerender() {
 	for (const [body, context] of liveBodies) {
 		body.destroy_all_children();
 		build(body, context);
+	};
+
+	const summary = panelSummary();
+
+	for (const listener of listeners) {
+		listener(summary);
+	};
+};
+
+function slotClock(slot) {
+	return `${String(Math.floor(slot / 2)).padStart(2, '0')}:${slot % 2 ? '30' : '00'}`;
+};
+
+// "08:00–12:00, 16:00–18:00?" where the question mark is a possible outage.
+function outageRanges(slots) {
+	const ranges = [];
+	let start = null;
+
+	for (let slot = 0; slot <= slots.length; slot++) {
+		if (start !== null && slots[slot] !== slots[start]) {
+			ranges.push(`${slotClock(start)}–${slotClock(slot)}${slots[start] === 'maybe' ? '?' : ''}`);
+			start = null;
+		};
+
+		if (start === null && ['off', 'maybe'].includes(slots[slot])) {
+			start = slot;
+		};
+	};
+
+	return ranges.join(', ') || _('none');
+};
+
+// null unless an outage is on or close. {text, color, lines}
+function panelSummary() {
+	const provider = state.settings?.get_string('outage-provider') ?? '';
+	const group = state.settings?.get_string('outage-group') ?? '';
+	const data = state.provider === provider ? state.data : null;
+	const status = provider && group && data ? scheduleStatus(data, group) : null;
+
+	if (!status?.today) {
+		return null;
+	};
+
+	const {current, next, today, tomorrow} = status;
+	const lines = [
+		`${statusTitle(current)} · ${nextLabel(status)}`,
+		`${_('Today')}: ${outageRanges(today)}`,
+		`${_('Tomorrow')}: ${tomorrow ? outageRanges(tomorrow) : _('no schedule')}`,
+	];
+
+	if (current === 'off' || current === 'maybe') {
+		return {
+			text: next ? format(_('until %s'), formatTime(next.at)) : statusTitle(current),
+			color: SLOT_COLORS[current],
+			lines,
+		};
+	};
+
+	const minutes = next ? (next.at - Date.now()) / 60000 : Infinity;
+
+	if (current !== 'on' || !['off', 'maybe'].includes(next?.state) || minutes > PANEL_AHEAD_MINUTES) {
+		return null;
+	};
+
+	return {
+		text: `${next.state === 'maybe' ? '~' : ''}${formatTime(next.at)}`,
+		color: next.state === 'off' && minutes <= PANEL_SOON_MINUTES ? SLOT_COLORS.maybe : null,
+		lines,
+	};
+};
+
+// Keeps fetching without a widget on the desktop. The listener gets the
+// summary now and after every refresh. Returns the unsubscribe.
+export function subscribe(settings, listener) {
+	listeners.add(listener);
+	state.settings = settings;
+	listener(panelSummary());
+	start(settings);
+
+	return () => listeners.delete(listener);
+};
+
+export function refresh() {
+	if (state.fetchId) {
+		fetchData();
 	};
 };
 

@@ -17,8 +17,8 @@
 }
 
 #panel .widget-panel-item {
-    -natural-hpadding: 6px;
-    -minimum-hpadding: 6px;
+    -natural-hpadding: 9px;
+    -minimum-hpadding: 9px;
 }
 
 #panel .widget-panel-item .system-status-icon {

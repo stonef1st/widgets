@@ -146,6 +146,7 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 
 		settings.bind('calendar-show-events', row, 'active', Gio.SettingsBindFlags.DEFAULT);
 		group.add(row);
+		this._addPanelRows(group, settings, 'panel-calendar', _('Only in the hour before an event with a set time'));
 		return group;
 	};
 
@@ -225,6 +226,7 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 			settings,
 			key: 'outage-group',
 		}));
+		this._addPanelRows(group, settings, 'panel-power', _('Only before and during an outage'));
 
 		return group;
 	};

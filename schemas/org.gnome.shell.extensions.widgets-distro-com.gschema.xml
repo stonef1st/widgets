@@ -71,6 +71,36 @@
       <summary>Top bar side for Claude usage</summary>
       <description>Left goes after Activities, center before the clock, right before the system items.</description>
     </key>
+    <key name="panel-power" type="b">
+      <default>false</default>
+      <summary>Show power outages in the top bar</summary>
+      <description>Appears only before and during an outage; a click lists the schedule.</description>
+    </key>
+    <key name="panel-power-position" type="s">
+      <choices>
+        <choice value="left"/>
+        <choice value="center"/>
+        <choice value="right"/>
+      </choices>
+      <default>'right'</default>
+      <summary>Top bar side for power outages</summary>
+      <description>Left goes after Activities, center before the clock, right before the system items.</description>
+    </key>
+    <key name="panel-calendar" type="b">
+      <default>false</default>
+      <summary>Show the next event in the top bar</summary>
+      <description>Appears only shortly before a timed event; a click lists today's events.</description>
+    </key>
+    <key name="panel-calendar-position" type="s">
+      <choices>
+        <choice value="left"/>
+        <choice value="center"/>
+        <choice value="right"/>
+      </choices>
+      <default>'right'</default>
+      <summary>Top bar side for the next event</summary>
+      <description>Left goes after Activities, center before the clock, right before the system items.</description>
+    </key>
     <key name="calendar-show-events" type="b">
       <default>true</default>
       <summary>Show calendar events</summary>

@@ -8,13 +8,17 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import * as AlertsWidget from './widgets/alerts/widget.js';
+import * as CalendarWidget from './widgets/calendar/widget.js';
 import * as ClaudeWidget from './widgets/claude/widget.js';
+import * as PowerWidget from './widgets/power/widget.js';
 import * as WeatherWidget from './widgets/weather/widget.js';
 
 const SYSTEM_ITEMS = ['screenRecording', 'screenSharing', 'dwellClick', 'a11y', 'keyboard', 'quickSettings'];
 const ALERT_ICON = Gio.ThemedIcon.new('dialog-warning-symbolic');
-const CLAUDE_ICON = Gio.FileIcon.new(
-	Gio.File.new_for_uri(import.meta.url).get_parent().get_child('icons/claude-symbolic.svg'));
+const CALENDAR_ICON = Gio.ThemedIcon.new('x-office-calendar-symbolic');
+const ICONS_DIR = Gio.File.new_for_uri(import.meta.url).get_parent().get_child('icons');
+const POWER_ICON = Gio.FileIcon.new(ICONS_DIR.get_child('power-symbolic.svg'));
+const CLAUDE_ICON = Gio.FileIcon.new(ICONS_DIR.get_child('claude-symbolic.svg'));
 
 function openWeatherApp() {
 	Main.overview.hide();
@@ -24,8 +28,10 @@ function openWeatherApp() {
 // Listed in the order they stand next to each other inside a panel zone.
 const ITEMS = [
 	{name: 'alerts', key: 'panel-alerts', positionKey: 'panel-alerts-position'},
+	{name: 'power', key: 'panel-power', positionKey: 'panel-power-position', hasMenu: true},
 	{name: 'weather', key: 'panel-weather', positionKey: 'panel-weather-position', onClick: openWeatherApp},
 	{name: 'claude', key: 'panel-claude', positionKey: 'panel-claude-position', hasMenu: true},
+	{name: 'calendar', key: 'panel-calendar', positionKey: 'panel-calendar-position', hasMenu: true},
 ];
 
 // Other extensions insert at the start of the right box, in whatever order
@@ -81,8 +87,17 @@ class PanelItem {
 		this._button.visible = true;
 	};
 
-	// Measured with the label on, so hiding it cannot flip the result.
-	dropLabelIfNarrow() {
+	// Tries the shorter texts in turn, then drops the label altogether. Measured
+	// with the label on, so hiding it cannot flip the result.
+	fitLabel(shorterTexts = []) {
+		for (const text of shorterTexts) {
+			if (zoneFits(this._box)) {
+				return;
+			};
+
+			this._label.text = text;
+		};
+
 		this._label.visible = zoneFits(this._box);
 	};
 
@@ -146,8 +161,16 @@ export class PanelItems {
 			this._unsubscribers.push(AlertsWidget.subscribe(this._settings, status => this._showAlerts(status)));
 		};
 
+		if (this._items.has('power')) {
+			this._unsubscribers.push(PowerWidget.subscribe(this._settings, summary => this._showPower(summary)));
+		};
+
 		if (this._items.has('claude')) {
 			this._unsubscribers.push(ClaudeWidget.subscribe(usage => this._showClaude(usage)));
+		};
+
+		if (this._items.has('calendar')) {
+			this._unsubscribers.push(CalendarWidget.subscribe(this._settings, summary => this._showCalendar(summary)));
 		};
 	};
 
@@ -181,7 +204,44 @@ export class PanelItems {
 		};
 
 		item.show(ALERT_ICON, label, {styleClass: active ? 'widget-panel-alert' : 'widget-panel-muted'});
-		item.dropLabelIfNarrow();
+		item.fitLabel();
+	};
+
+	// Silent unless an outage is on or close.
+	_showPower(summary) {
+		const item = this._items.get('power');
+
+		if (!item) {
+			return;
+		};
+
+		if (!summary) {
+			item.hide();
+			return;
+		};
+
+		item.setMenuLines(summary.lines);
+		item.show(POWER_ICON, summary.text, {iconColor: summary.color});
+	};
+
+	// Silent unless a timed event is close. A narrow panel keeps only the time.
+	_showCalendar(summary) {
+		const item = this._items.get('calendar');
+
+		if (!item) {
+			return;
+		};
+
+		if (!summary) {
+			item.hide();
+			return;
+		};
+
+		const {time, title, soon, lines} = summary;
+
+		item.setMenuLines(lines);
+		item.show(CALENDAR_ICON, `${time} ${title}`, {iconColor: soon ? this._getTheme().accent : null});
+		item.fitLabel([time]);
 	};
 
 	_showClaude(usage) {

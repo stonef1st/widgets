@@ -560,6 +560,14 @@ class WidgetController {
       AlertsWidget.refresh();
     };
 
+    if (key === 'outage-provider' || key === 'outage-group') {
+      PowerWidget.refresh();
+    };
+
+    if (key === 'calendar-show-events') {
+      this._panelItems.sync();
+    };
+
     if (key === 'show-panel-button') {
       this._syncIndicator();
       return;
