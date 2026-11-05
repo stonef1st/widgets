@@ -15,3 +15,21 @@
 .widget-panel-icon {
     icon-size: 16px;
 }
+
+#panel .widget-panel-item {
+    -natural-hpadding: 4px;
+    -minimum-hpadding: 4px;
+}
+
+.widget-panel-alert {
+    background-color: #c01c28;
+    color: #ffffff;
+    border-radius: 99px;
+    padding: 0 10px;
+    margin: 3px 0;
+    font-weight: 700;
+}
+
+.widget-panel-alert-unknown {
+    color: rgba(255, 255, 255, 0.6);
+}

@@ -103,24 +103,29 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 		return group;
 	};
 
-	_weatherGroup(settings) {
-		const group = new Adw.PreferencesGroup({title: _('Weather')});
+	_addPanelRows(group, settings, key, subtitle) {
 		const showRow = new Adw.SwitchRow({
 			title: _('Show in the top bar'),
-			subtitle: _('Icon and temperature'),
+			subtitle,
 		});
 		const positionRow = stringComboRow({
 			title: _('Position in the top bar'),
 			values: ['left', 'center', 'right'],
 			labels: [_('Left'), _('Center'), _('Right')],
 			settings,
-			key: 'panel-weather-position',
+			key: `${key}-position`,
 		});
 
-		settings.bind('panel-weather', showRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-		settings.bind('panel-weather', positionRow, 'sensitive', Gio.SettingsBindFlags.GET);
+		settings.bind(key, showRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+		settings.bind(key, positionRow, 'sensitive', Gio.SettingsBindFlags.GET);
 		group.add(showRow);
 		group.add(positionRow);
+	};
+
+	_weatherGroup(settings) {
+		const group = new Adw.PreferencesGroup({title: _('Weather')});
+
+		this._addPanelRows(group, settings, 'panel-weather', _('Icon and temperature'));
 		return group;
 	};
 
@@ -153,6 +158,7 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 		settings.bind('alerts-notify', notifyRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 		group.add(regionRow);
 		group.add(notifyRow);
+		this._addPanelRows(group, settings, 'panel-alerts', _('Only during an alert or when the service is unavailable'));
 		this._loadRegions(settings, group, regionRow);
 		return group;
 	};

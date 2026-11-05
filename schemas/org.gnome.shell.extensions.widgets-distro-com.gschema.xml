@@ -41,6 +41,21 @@
       <summary>Top bar side for the weather</summary>
       <description>Left goes after Activities, center before the clock, right before the system items.</description>
     </key>
+    <key name="panel-alerts" type="b">
+      <default>false</default>
+      <summary>Show air raid alerts in the top bar</summary>
+      <description>Appears only during an alert or while the alert service is unavailable.</description>
+    </key>
+    <key name="panel-alerts-position" type="s">
+      <choices>
+        <choice value="left"/>
+        <choice value="center"/>
+        <choice value="right"/>
+      </choices>
+      <default>'right'</default>
+      <summary>Top bar side for air raid alerts</summary>
+      <description>Left goes after Activities, center before the clock, right before the system items.</description>
+    </key>
     <key name="calendar-show-events" type="b">
       <default>true</default>
       <summary>Show calendar events</summary>

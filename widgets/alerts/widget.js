@@ -42,6 +42,7 @@ const state = {
 	settings: null,
 };
 const liveBodies = new Map();
+const listeners = new Set();
 
 function typeLabel(alertType) {
 	return _(TYPE_LABELS[alertType] ?? 'Air raid alert');
@@ -132,7 +133,7 @@ function startPolling(settings) {
 	state.session = createSession();
 	state.cancellable = new Gio.Cancellable();
 	state.pollId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, POLL_SECONDS, () => {
-		if (liveBodies.size === 0) {
+		if (liveBodies.size === 0 && listeners.size === 0) {
 			stopPolling();
 			return GLib.SOURCE_REMOVE;
 		};
@@ -159,6 +160,7 @@ function stopPolling() {
 export function cleanup() {
 	stopPolling();
 	liveBodies.clear();
+	listeners.clear();
 	state.status = null;
 	state.regionId = null;
 	state.clearedAt = null;
@@ -169,6 +171,41 @@ function rerender() {
 	for (const [body, context] of liveBodies) {
 		body.destroy_all_children();
 		build(body, context);
+	};
+
+	const summary = statusSummary();
+
+	for (const listener of listeners) {
+		listener(summary);
+	};
+};
+
+function statusSummary() {
+	if (!state.settings?.get_string('alerts-region-id')) {
+		return {active: false, error: false, label: ''};
+	};
+
+	if (state.status?.active) {
+		return {active: true, error: false, label: state.status.types.map(typeLabel).join(', ')};
+	};
+
+	return {active: false, error: state.error, label: state.error ? _('Alert service unavailable') : ''};
+};
+
+// Keeps polling alive without a widget on the desktop. The listener gets
+// {active, error, label} now and after every poll. Returns the unsubscribe.
+export function subscribe(settings, listener) {
+	listeners.add(listener);
+	state.settings = settings;
+	listener(statusSummary());
+	startPolling(settings);
+
+	return () => listeners.delete(listener);
+};
+
+export function refresh() {
+	if (state.pollId) {
+		poll();
 	};
 };
 

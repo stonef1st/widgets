@@ -19,7 +19,7 @@ import * as PowerWidget from './widgets/power/widget.js';
 import * as WeatherWidget from './widgets/weather/widget.js';
 import { configureLogger, resetLogger, warn } from './logger.js';
 import { _, format, setLanguage } from './i18n.js';
-import { PanelWeather } from './panelWeather.js';
+import { PanelItems } from './panelItems.js';
 import { WorkspaceIntegration } from './workspaceIntegration.js';
 
 const EXTENSION_PATH = GLib.path_get_dirname(GLib.filename_from_uri(import.meta.url)[0]);
@@ -203,7 +203,8 @@ class WidgetController {
     this._widgets = this._loadWidgets();
     this._saveWidgets();
     this._syncIndicator();
-    this._syncPanelWeather();
+    this._panelItems = new PanelItems(this._extension.uuid, this._layoutSettings);
+    this._panelItems.sync();
     this._createLayer();
     this._rebuildWidgets();
     this._refreshWeather(true);
@@ -267,8 +268,8 @@ class WidgetController {
     this._indicator?.destroy();
     this._indicator = null;
 
-    this._panelWeather?.destroy();
-    this._panelWeather = null;
+    this._panelItems?.destroy();
+    this._panelItems = null;
 
     this._clearWeatherInfo();
 
@@ -454,7 +455,7 @@ class WidgetController {
   };
 
   _refreshWeatherViews() {
-    this._panelWeather?.update(this._weather);
+    this._panelItems?.updateWeather(this._weather);
 
     if (this._editMode) {
       return;
@@ -542,26 +543,18 @@ class WidgetController {
     };
   };
 
-  _syncPanelWeather() {
-    this._panelWeather?.destroy();
-    this._panelWeather = null;
-
-    if (this._layoutSettings.get_boolean('panel-weather')) {
-      this._panelWeather = new PanelWeather(
-        `${this._extension.uuid}-weather`,
-        this._layoutSettings.get_string('panel-weather-position'));
-      this._panelWeather.update(this._weather);
-    };
-  };
-
   _onSettingChanged(key) {
     if (key === LAYOUT_KEY) {
       return;
     };
 
-    if (key === 'panel-weather' || key === 'panel-weather-position') {
-      this._syncPanelWeather();
+    if (key.startsWith('panel-')) {
+      this._panelItems.sync();
       return;
+    };
+
+    if (key === 'alerts-region-id') {
+      AlertsWidget.refresh();
     };
 
     if (key === 'show-panel-button') {
@@ -572,6 +565,7 @@ class WidgetController {
     if (key === 'language') {
       setLanguage(this._layoutSettings.get_string('language'));
       this._syncIndicator();
+      this._panelItems.sync();
       this._weatherUpdateTime = 0;
       this._refreshWeather(true);
     };

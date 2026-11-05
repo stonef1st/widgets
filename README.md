@@ -17,8 +17,9 @@
 > - Battery widget: async D-Bus reads, only connected devices, level icon for
 >   the laptop battery, headphones and gamepad icons.
 > - Weather: icon matches the text when only forecast data has sky info.
-> - Weather in the top bar: optional symbolic icon and temperature, placed
->   left, center or right in preferences.
+> - Top bar items, each optional and placed left, center or right in
+>   preferences: weather (symbolic icon and temperature) and air raid alerts
+>   (shown only during an alert or while the service is unavailable).
 >
 > Install:
 >

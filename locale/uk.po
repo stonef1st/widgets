@@ -280,6 +280,9 @@ msgstr "Показувати на верхній панелі"
 msgid "Icon and temperature"
 msgstr "Значок і температура"
 
+msgid "Only during an alert or when the service is unavailable"
+msgstr "Лише під час тривоги або коли сервіс недоступний"
+
 msgid "Position in the top bar"
 msgstr "Розташування на верхній панелі"
 
