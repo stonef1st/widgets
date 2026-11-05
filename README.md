@@ -27,6 +27,7 @@
 >   hour before it) and the running ClickUp timer.
 > - ClickUp widget: tasks in a chosen status, a click opens the task. Reads a
 >   personal token entered in preferences and kept in an owner-only file.
+> - Photos widget removed.
 >
 > Install:
 >

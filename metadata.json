@@ -1,5 +1,5 @@
 {
-  "description": "Desktop widgets: clock, calendar, weather, photos, and battery. Fork with Ukrainian UI, Monday-first week and reworked battery icons.",
+  "description": "Desktop widgets: clock, calendar, weather, and battery. Fork with Ukrainian UI, Monday-first week and reworked battery icons.",
   "name": "Widgets (UA)",
   "settings-schema": "org.gnome.shell.extensions.widgets-distro-com",
   "shell-version": [

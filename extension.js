@@ -15,7 +15,6 @@ import * as CalendarWidget from './widgets/calendar/widget.js';
 import * as ClaudeWidget from './widgets/claude/widget.js';
 import * as ClickUpWidget from './widgets/clickup/widget.js';
 import * as ClockWidget from './widgets/clock/widget.js';
-import * as PhotosWidget from './widgets/photos/widget.js';
 import * as PowerWidget from './widgets/power/widget.js';
 import * as WeatherWidget from './widgets/weather/widget.js';
 import { configureLogger, resetLogger, warn } from './logger.js';
@@ -38,7 +37,6 @@ const WIDGET_MODULES = [
   ClockWidget,
   CalendarWidget,
   WeatherWidget,
-  PhotosWidget,
   BatteryWidget,
   AlertsWidget,
   PowerWidget,
@@ -89,9 +87,8 @@ function defaultWidgetPositions() {
   return {
     weather: {x: leftX, y: topY},
     calendar: {x: middleX, y: topY},
-    photos: {x: rightX, y: topY},
+    battery: {x: rightX, y: topY},
     clock: {x: middleX, y: bottomY},
-    battery: {x: rightX, y: bottomY},
   };
 };
 

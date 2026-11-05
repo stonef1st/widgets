@@ -175,9 +175,6 @@ msgstr "Відкрийте налаштування розширення"
 msgid "Outage at %s"
 msgstr "Відключення о %s"
 
-msgid "Photos"
-msgstr "Фото"
-
 msgid "Poltava Oblenergo"
 msgstr "Полтаваобленерго"
 
