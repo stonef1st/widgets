@@ -17,8 +17,17 @@
 }
 
 #panel .widget-panel-item {
-    -natural-hpadding: 4px;
-    -minimum-hpadding: 4px;
+    -natural-hpadding: 6px;
+    -minimum-hpadding: 6px;
+}
+
+#panel .widget-panel-item .system-status-icon {
+    padding: 0;
+    margin: 0;
+}
+
+.widget-panel-label {
+    padding-left: 4px;
 }
 
 .widget-panel-alert {
@@ -30,6 +39,6 @@
     font-weight: 700;
 }
 
-.widget-panel-alert-unknown {
+.widget-panel-muted {
     color: rgba(255, 255, 255, 0.6);
 }

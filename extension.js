@@ -203,7 +203,7 @@ class WidgetController {
     this._widgets = this._loadWidgets();
     this._saveWidgets();
     this._syncIndicator();
-    this._panelItems = new PanelItems(this._extension.uuid, this._layoutSettings);
+    this._panelItems = new PanelItems(this._extension.uuid, this._layoutSettings, () => this._gnomeTheme());
     this._panelItems.sync();
     this._createLayer();
     this._rebuildWidgets();
@@ -216,7 +216,10 @@ class WidgetController {
 
     this._interfaceSettings.connectObject(
       'changed::color-scheme', () => this._rebuildWidgets(),
-      'changed::accent-color', () => this._rebuildWidgets(),
+      'changed::accent-color', () => {
+        this._panelItems.sync();
+        this._rebuildWidgets();
+      },
       this
     );
 

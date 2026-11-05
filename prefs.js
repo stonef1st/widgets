@@ -70,6 +70,7 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 		page.add(this._calendarGroup(settings));
 		page.add(this._alertsGroup(settings));
 		page.add(this._outagesGroup(settings));
+		page.add(this._claudeGroup(settings));
 	};
 
 	_generalGroup(settings) {
@@ -126,6 +127,13 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 		const group = new Adw.PreferencesGroup({title: _('Weather')});
 
 		this._addPanelRows(group, settings, 'panel-weather', _('Icon and temperature'));
+		return group;
+	};
+
+	_claudeGroup(settings) {
+		const group = new Adw.PreferencesGroup({title: _('Claude Usage')});
+
+		this._addPanelRows(group, settings, 'panel-claude', _('Icon and the limit closest to running out'));
 		return group;
 	};
 

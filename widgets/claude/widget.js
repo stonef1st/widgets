@@ -44,6 +44,7 @@ const state = {
 	problem: null,
 };
 const liveBodies = new Map();
+const listeners = new Set();
 // Current page of each narrow card, by widget id; kept across rerenders.
 const pages = new Map();
 // Touchpads send a burst of smooth-scroll events per swipe.
@@ -115,7 +116,7 @@ function start() {
 	});
 	// Reset countdowns move with the clock even without new data.
 	state.renderId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, RENDER_SECONDS, () => {
-		if (liveBodies.size === 0) {
+		if (liveBodies.size === 0 && listeners.size === 0) {
 			stop();
 			return GLib.SOURCE_REMOVE;
 		};
@@ -179,10 +180,54 @@ function rerender() {
 		body.destroy_all_children();
 		build(body, context);
 	};
+
+	const summary = usageSummary();
+
+	for (const listener of listeners) {
+		listener(summary);
+	};
+};
+
+function limitPercentage(limit) {
+	return Number.isFinite(limit?.utilization) ? Math.round(limit.utilization) : null;
+};
+
+// null while loading. percentage is the limit closest to running out, so a
+// nearly spent week is not hidden behind a quiet session.
+function usageSummary() {
+	if (state.problem === 'login') {
+		return {percentage: null, lines: [_('Open Claude Code'), _('Sign-in token has expired')]};
+	};
+
+	if (!state.data) {
+		return state.problem ? {percentage: null, lines: [_('No data')]} : null;
+	};
+
+	const known = LIMITS.map(([key]) => limitPercentage(state.data[key])).filter(value => value !== null);
+
+	return {
+		percentage: known.length > 0 ? Math.max(...known) : null,
+		lines: LIMITS.map(([key, title]) => {
+			const limit = state.data[key];
+			const percentage = limitPercentage(limit);
+
+			return `${_(title)}: ${percentage === null ? '—' : `${percentage}%`} · ${resetLabel(limit?.resets_at)}`;
+		}),
+	};
+};
+
+// Keeps fetching without a widget on the desktop. The listener gets the
+// summary now and after every refresh. Returns the unsubscribe.
+export function subscribe(listener) {
+	listeners.add(listener);
+	listener(usageSummary());
+	start();
+
+	return () => listeners.delete(listener);
 };
 
 // Accent up to 50%, yellow above 50%, red above 70%.
-function usageColor(percentage, theme) {
+export function usageColor(percentage, theme) {
 	if (percentage > 70) {
 		return RING_COLORS.red;
 	};
@@ -219,7 +264,7 @@ export function style(theme) {
 };
 
 function createSlot(limit, title, theme, createLabel) {
-	const percentage = Number.isFinite(limit?.utilization) ? Math.round(limit.utilization) : null;
+	const percentage = limitPercentage(limit);
 	const slot = new St.BoxLayout({
 		orientation: Clutter.Orientation.VERTICAL,
 		style_class: 'widget-claude-slot',
@@ -367,4 +412,5 @@ export function render(context) {
 export function cleanup() {
 	stop();
 	liveBodies.clear();
+	listeners.clear();
 };

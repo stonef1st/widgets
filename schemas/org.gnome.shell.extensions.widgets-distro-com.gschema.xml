@@ -56,6 +56,21 @@
       <summary>Top bar side for air raid alerts</summary>
       <description>Left goes after Activities, center before the clock, right before the system items.</description>
     </key>
+    <key name="panel-claude" type="b">
+      <default>false</default>
+      <summary>Show Claude usage in the top bar</summary>
+      <description>An icon and the limit closest to running out; a click lists both limits.</description>
+    </key>
+    <key name="panel-claude-position" type="s">
+      <choices>
+        <choice value="left"/>
+        <choice value="center"/>
+        <choice value="right"/>
+      </choices>
+      <default>'right'</default>
+      <summary>Top bar side for Claude usage</summary>
+      <description>Left goes after Activities, center before the clock, right before the system items.</description>
+    </key>
     <key name="calendar-show-events" type="b">
       <default>true</default>
       <summary>Show calendar events</summary>
