@@ -526,11 +526,16 @@ class WidgetController {
     this._indicator.menu.addMenuItem(editItem);
     this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
+    this._addItems = new Map();
+
     for (const [type, label] of WIDGET_TYPES) {
       const item = new PopupMenu.PopupMenuItem(format(_('Add %s'), _(label)));
       item.connectObject('activate', () => this.addWidget(type), this);
       this._indicator.menu.addMenuItem(item);
+      this._addItems.set(type, item);
     };
+
+    this._syncAddItems();
 
     this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
@@ -545,9 +550,19 @@ class WidgetController {
     Main.panel.addToStatusArea(this._extension.uuid, this._indicator);
   };
 
+  // The menu offers only the widgets that are not on the desktop yet.
+  _syncAddItems() {
+    const onDesktop = new Set(this._widgets.map(widget => widget.type));
+
+    for (const [type, item] of this._addItems ?? []) {
+      item.visible = !onDesktop.has(type);
+    };
+  };
+
   _syncIndicator() {
     this._indicator?.destroy();
     this._indicator = null;
+    this._addItems = null;
 
     if (this._layoutSettings.get_boolean('show-panel-button')) {
       this._createIndicator();
@@ -706,6 +721,8 @@ class WidgetController {
     for (const widget of this._widgets) {
       this._createWidget(widget);
     };
+
+    this._syncAddItems();
   };
 
   _refreshWidgets() {
