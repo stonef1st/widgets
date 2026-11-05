@@ -276,6 +276,14 @@ function fallbackIcon(text) {
 	return 'weather-clear';
 };
 
+export function symbolicIconName(iconName) {
+	const baseName = String(iconName || 'weather-clear')
+		.replace(/-symbolic$/, '')
+		.replace(/-(small|large)$/, '');
+
+	return `${baseName}-symbolic`;
+};
+
 function fullColorWeatherIcon(iconName) {
 	const baseName = String(iconName || 'weather-clear')
 		.replace(/-symbolic$/, '')

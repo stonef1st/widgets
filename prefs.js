@@ -66,6 +66,7 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 
 		window.add(page);
 		page.add(this._generalGroup(settings));
+		page.add(this._weatherGroup(settings));
 		page.add(this._calendarGroup(settings));
 		page.add(this._alertsGroup(settings));
 		page.add(this._outagesGroup(settings));
@@ -99,6 +100,27 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 		settings.bind('show-panel-button', panelRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 		group.add(panelRow);
 
+		return group;
+	};
+
+	_weatherGroup(settings) {
+		const group = new Adw.PreferencesGroup({title: _('Weather')});
+		const showRow = new Adw.SwitchRow({
+			title: _('Show in the top bar'),
+			subtitle: _('Icon and temperature'),
+		});
+		const positionRow = stringComboRow({
+			title: _('Position in the top bar'),
+			values: ['left', 'center', 'right'],
+			labels: [_('Left'), _('Center'), _('Right')],
+			settings,
+			key: 'panel-weather-position',
+		});
+
+		settings.bind('panel-weather', showRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+		settings.bind('panel-weather', positionRow, 'sensitive', Gio.SettingsBindFlags.GET);
+		group.add(showRow);
+		group.add(positionRow);
 		return group;
 	};
 

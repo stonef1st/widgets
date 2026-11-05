@@ -274,6 +274,24 @@ msgstr "Запоріжжяобленерго"
 msgid "Zhytomyr Oblenergo"
 msgstr "Житомиробленерго"
 
+msgid "Show in the top bar"
+msgstr "Показувати на верхній панелі"
+
+msgid "Icon and temperature"
+msgstr "Значок і температура"
+
+msgid "Position in the top bar"
+msgstr "Розташування на верхній панелі"
+
+msgid "Left"
+msgstr "Ліворуч"
+
+msgid "Center"
+msgstr "По центру"
+
+msgid "Right"
+msgstr "Праворуч"
+
 msgid "Top bar button"
 msgstr "Кнопка на верхній панелі"
 
