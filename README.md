@@ -28,6 +28,8 @@
 > - ClickUp widget: tasks in a chosen status, a click opens the task. Reads a
 >   personal token entered in preferences and kept in an owner-only file.
 > - Photos widget removed.
+> - Glass widgets, off by default: blurred wallpaper behind each card, with a
+>   highlight along the edges.
 >
 > Install:
 >

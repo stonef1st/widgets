@@ -94,6 +94,9 @@ msgstr "Перший день тижня"
 msgid "General"
 msgstr "Загальні"
 
+msgid "Glass widgets"
+msgstr "Скляні віджети"
+
 msgid "Group"
 msgstr "Черга"
 
@@ -360,6 +363,9 @@ msgstr "Праворуч"
 
 msgid "Top bar button"
 msgstr "Кнопка на верхній панелі"
+
+msgid "Blurred wallpaper behind widgets with a highlight along the edges"
+msgstr "Розмиті шпалери за віджетами й відблиск по краях"
 
 msgid "Edit mode and adding widgets live in this button"
 msgstr "Через цю кнопку вмикається редагування й додаються віджети"

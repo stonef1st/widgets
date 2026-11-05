@@ -364,7 +364,7 @@ function buildStrip(slots, currentSlot, theme) {
 		for (const [half, slot] of [['first', hour * 2], ['second', hour * 2 + 1]]) {
 			hourBar.add_child(new St.Widget({
 				style_class: `widget-power-slot widget-power-slot-${half}`,
-				style: `background-color: ${SLOT_COLORS[slots[slot]] ?? theme.border};`,
+				style: `background-color: ${SLOT_COLORS[slots[slot]] ?? theme.track};`,
 				x_expand: true,
 				y_expand: true,
 			}));

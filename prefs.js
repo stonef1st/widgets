@@ -95,6 +95,14 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 			key: 'first-day-of-week',
 		}));
 
+		const glassRow = new Adw.SwitchRow({
+			title: _('Glass widgets'),
+			subtitle: _('Blurred wallpaper behind widgets with a highlight along the edges'),
+		});
+
+		settings.bind('widget-glass', glassRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+		group.add(glassRow);
+
 		const panelRow = new Adw.SwitchRow({
 			title: _('Top bar button'),
 			subtitle: _('Edit mode and adding widgets live in this button'),

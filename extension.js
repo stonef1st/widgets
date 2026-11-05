@@ -20,6 +20,7 @@ import * as WeatherWidget from './widgets/weather/widget.js';
 import { configureLogger, resetLogger, warn } from './logger.js';
 import { _, format, setLanguage } from './i18n.js';
 import { refresh as refreshClickUp } from './clickup.js';
+import { wrapInGlass } from './glass.js';
 import { PanelItems } from './panelItems.js';
 import { WorkspaceIntegration } from './workspaceIntegration.js';
 
@@ -235,7 +236,14 @@ class WidgetController {
     this._watchBatteryChanges();
 
     Main.layoutManager.connectObject(
-      'monitors-changed', () => this._syncLayerGeometry(),
+      'monitors-changed', () => {
+        this._syncLayerGeometry();
+
+        // The glass holds a copy of the wallpaper sized for the old monitor.
+        if (this._layoutSettings.get_boolean('widget-glass')) {
+          this._rebuildWidgets();
+        };
+      },
       this
     );
 
@@ -377,12 +385,15 @@ class WidgetController {
 
   _gnomeTheme() {
     const dark = darkStyleEnabled(this._interfaceSettings);
+    const glass = this._layoutSettings.get_boolean('widget-glass');
+    const border = dark ? '#3d3d3d' : '#deddda';
 
     return {
       dark,
       accent: accentColor(this._interfaceSettings),
-      background: dark ? '#242424' : '#ffffff',
-      border: dark ? '#3d3d3d' : '#deddda',
+      background: glass ? 'transparent' : dark ? '#242424' : '#ffffff',
+      border: glass ? 'transparent' : border,
+      track: border,
       text: dark ? '#ffffff' : '#241f31',
       muted: dark ? '#c0bfbc' : '#5e5c64',
     };
@@ -710,7 +721,7 @@ class WidgetController {
       };
 
       try {
-        if (view.actor.get_parent() !== this._layer || view.body.get_parent() !== view.actor) {
+        if (view.actor.get_parent() !== this._layer || view.body.get_parent() !== view.card) {
           view.actor.disconnectObject(this);
           this._views.delete(id);
           continue;
@@ -727,20 +738,22 @@ class WidgetController {
 
   _createWidget(widget) {
     const [width, height] = sizeForWidget(widget);
-    const actorParams = {
+    const glass = this._layoutSettings.get_boolean('widget-glass');
+    const cardParams = {
       orientation: Clutter.Orientation.VERTICAL,
       style_class: `widget widget-${widget.type}`,
-      reactive: true,
-      can_focus: true,
-      track_hover: true,
+      reactive: !glass,
+      can_focus: !glass,
+      track_hover: !glass,
     };
     const style = this._styleForWidget(widget);
 
     if (style) {
-      actorParams.style = style;
+      cardParams.style = style;
     };
 
-    const actor = new St.BoxLayout(actorParams);
+    const card = new St.BoxLayout(cardParams);
+    const actor = glass ? wrapInGlass(card, this._gnomeTheme().dark) : card;
 
     actor.set_size(width, height);
     actor.set_position(widget.x, widget.y);
@@ -751,12 +764,13 @@ class WidgetController {
       x_expand: true,
       y_expand: true,
     });
-    actor.add_child(body);
+    card.add_child(body);
 
     this._layer.add_child(actor);
     const view = {
       widget,
       actor,
+      card,
       body,
       editBorder: null,
       removeButton: null,
