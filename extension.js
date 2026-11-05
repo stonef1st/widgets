@@ -13,12 +13,14 @@ import * as AlertsWidget from './widgets/alerts/widget.js';
 import * as BatteryWidget from './widgets/battery/widget.js';
 import * as CalendarWidget from './widgets/calendar/widget.js';
 import * as ClaudeWidget from './widgets/claude/widget.js';
+import * as ClickUpWidget from './widgets/clickup/widget.js';
 import * as ClockWidget from './widgets/clock/widget.js';
 import * as PhotosWidget from './widgets/photos/widget.js';
 import * as PowerWidget from './widgets/power/widget.js';
 import * as WeatherWidget from './widgets/weather/widget.js';
 import { configureLogger, resetLogger, warn } from './logger.js';
 import { _, format, setLanguage } from './i18n.js';
+import { refresh as refreshClickUp } from './clickup.js';
 import { PanelItems } from './panelItems.js';
 import { WorkspaceIntegration } from './workspaceIntegration.js';
 
@@ -41,6 +43,7 @@ const WIDGET_MODULES = [
   AlertsWidget,
   PowerWidget,
   ClaudeWidget,
+  ClickUpWidget,
 ];
 const WIDGETS = new Map(WIDGET_MODULES.map(widgetModule => [widgetModule.type, widgetModule]));
 const WIDGET_TYPES = WIDGET_MODULES.map(widgetModule => [widgetModule.type, widgetModule.label]);
@@ -568,6 +571,10 @@ class WidgetController {
       this._panelItems.sync();
     };
 
+    if (key.startsWith('clickup-')) {
+      refreshClickUp();
+    };
+
     if (key === 'show-panel-button') {
       this._syncIndicator();
       return;
@@ -947,7 +954,7 @@ class WidgetController {
     const view = this._viewForPickedActor(pickedActor) ??
       (this._pickedActorIsOnDesktop(pickedActor) ? this._viewForStagePoint(stageX, stageY) : null);
 
-    if (!view) {
+    if (!view || WIDGETS.get(view.widget.type)?.interactive) {
       return Clutter.EVENT_PROPAGATE;
     };
 

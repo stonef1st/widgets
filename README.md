@@ -23,8 +23,10 @@
 >   preferences: weather (symbolic icon and temperature), air raid alerts
 >   (shown only during an alert or while the service is unavailable), power
 >   outages (shown only before and during one), Claude usage (the limit closest
->   to running out, a click lists both) and the next event (shown only in the
->   hour before it).
+>   to running out, a click lists both), the next event (shown only in the
+>   hour before it) and the running ClickUp timer.
+> - ClickUp widget: tasks in a chosen status, a click opens the task. Reads a
+>   personal token entered in preferences and kept in an owner-only file.
 >
 > Install:
 >

@@ -1,0 +1,113 @@
+.widget-clickup .widget-body {
+	spacing: 0;
+}
+
+.widget-clickup-header {
+	spacing: 8px;
+	padding: 0 8px;
+	margin-bottom: 6px;
+}
+
+.widget-clickup-icon {
+	icon-size: 18px;
+}
+
+.widget-clickup-title {
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.widget-clickup-refresh {
+	border-radius: 6px;
+	padding: 3px;
+}
+
+.widget-clickup-refresh:hover {
+	background-color: rgba(255, 255, 255, 0.12);
+}
+
+.widget-clickup-refresh-icon {
+	icon-size: 14px;
+}
+
+.widget-clickup-row {
+	border-radius: 8px;
+	padding: 5px 8px;
+	margin-bottom: 2px;
+}
+
+.widget-clickup-row:hover {
+	background-color: rgba(255, 255, 255, 0.1);
+}
+
+.widget-clickup-row-urgent {
+	background-color: rgba(248, 90, 100, 0.28);
+}
+
+.widget-clickup-row-urgent:hover {
+	background-color: rgba(248, 90, 100, 0.42);
+}
+
+.widget-clickup-row-high {
+	background-color: rgba(255, 197, 61, 0.22);
+}
+
+.widget-clickup-row-high:hover {
+	background-color: rgba(255, 197, 61, 0.36);
+}
+
+.widget-clickup-overdue-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 4px;
+	background-color: #ed3540;
+}
+
+.widget-clickup-row-content {
+	spacing: 10px;
+}
+
+.widget-clickup-task {
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.widget-clickup-due {
+	font-size: 12px;
+}
+
+.widget-clickup-avatars {
+	spacing: 3px;
+}
+
+.widget-clickup-avatar {
+	width: 20px;
+	height: 20px;
+	border-radius: 10px;
+}
+
+.widget-clickup-initials {
+	font-size: 9px;
+	font-weight: 700;
+	color: #ffffff;
+}
+
+.widget-clickup-avatars-more {
+	font-size: 11px;
+	font-weight: 700;
+}
+
+.widget-clickup-more {
+	font-size: 12px;
+	padding: 6px 8px 0;
+}
+
+.widget-clickup-message {
+	font-size: 18px;
+	font-weight: 800;
+}
+
+.widget-clickup-detail {
+	font-size: 12px;
+	margin-top: 4px;
+}

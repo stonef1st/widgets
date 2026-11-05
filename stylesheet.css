@@ -30,6 +30,10 @@
     padding-left: 4px;
 }
 
+.widget-panel-tabular {
+    font-feature-settings: "tnum";
+}
+
 .widget-panel-alert {
     background-color: #c01c28;
     color: #ffffff;

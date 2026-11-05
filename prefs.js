@@ -5,6 +5,7 @@ import Gtk from 'gi://Gtk';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import { REGIONS_URL, indexRegions } from './alerts.js';
+import { forgetToken, hasToken, saveToken } from './clickup.js';
 import { _, availableLanguages, setLanguage } from './i18n.js';
 import { createSession, fetchJson } from './net.js';
 import { GROUPS, PROVIDERS, groupLabel } from './outages.js';
@@ -71,6 +72,7 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 		page.add(this._alertsGroup(settings));
 		page.add(this._outagesGroup(settings));
 		page.add(this._claudeGroup(settings));
+		page.add(this._clickUpGroup(settings));
 	};
 
 	_generalGroup(settings) {
@@ -128,6 +130,67 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 
 		this._addPanelRows(group, settings, 'panel-weather', _('Icon and temperature'));
 		return group;
+	};
+
+	_clickUpGroup(settings) {
+		const group = new Adw.PreferencesGroup({
+			title: 'ClickUp',
+			description: _('The token is kept in a separate file only you can read, not in the settings.'),
+		});
+		const mineRow = new Adw.SwitchRow({title: _('Only my tasks')});
+
+		group.add(this._tokenRow(settings));
+		group.add(this._entryRow(settings, 'clickup-status', _('Status in the widget')));
+		group.add(this._entryRow(settings, 'clickup-list-id', _('List ID (empty: whole workspace)')));
+		settings.bind('clickup-only-mine', mineRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+		group.add(mineRow);
+		this._addPanelRows(group, settings, 'panel-clickup', _('Running timer, only while it runs'));
+		return group;
+	};
+
+	// The stamp holds no secret: it only tells the shell to reread the token.
+	_tokenRow(settings) {
+		const row = new Adw.PasswordEntryRow({show_apply_button: true});
+		const forget = new Gtk.Button({
+			icon_name: 'user-trash-symbolic',
+			tooltip_text: _('Forget the token'),
+			valign: Gtk.Align.CENTER,
+			css_classes: ['flat'],
+		});
+		const sync = () => {
+			const saved = hasToken();
+
+			row.title = saved ? _('Token saved; enter a new one to replace it') : _('Personal API token');
+			forget.visible = saved;
+		};
+		const changed = change => {
+			try {
+				change();
+				row.text = '';
+				sync();
+				settings.set_int64('clickup-token-stamp', Date.now());
+			} catch (error) {
+				row.title = `${_('Could not save the token')}: ${error.message}`;
+			};
+		};
+
+		row.add_suffix(forget);
+		row.connect('apply', () => {
+			if (row.text.trim()) {
+				changed(() => saveToken(row.text));
+			};
+		});
+		forget.connect('clicked', () => changed(forgetToken));
+		sync();
+		return row;
+	};
+
+	// Saved on apply rather than on every keystroke, each save refetches.
+	_entryRow(settings, key, title) {
+		const row = new Adw.EntryRow({title, show_apply_button: true, text: settings.get_string(key)});
+
+		row.connect('apply', () => settings.set_string(key, row.text.trim()));
+		return row;
 	};
 
 	_claudeGroup(settings) {

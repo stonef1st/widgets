@@ -20,6 +20,18 @@ export class HttpError extends Error {
 	};
 };
 
+export async function fetchBytes(session, url, cancellable = null) {
+	const message = Soup.Message.new('GET', url);
+	const bytes = await session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, cancellable);
+	const status = message.get_status();
+
+	if (status !== Soup.Status.OK) {
+		throw new HttpError(status, url);
+	};
+
+	return bytes;
+};
+
 export async function fetchJson(session, url, cancellable = null, headers = {}) {
 	const message = Soup.Message.new('GET', url);
 

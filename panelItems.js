@@ -1,5 +1,6 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 
@@ -7,6 +8,8 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
+import * as ClickUp from './clickup.js';
+import { _ } from './i18n.js';
 import * as AlertsWidget from './widgets/alerts/widget.js';
 import * as CalendarWidget from './widgets/calendar/widget.js';
 import * as ClaudeWidget from './widgets/claude/widget.js';
@@ -19,6 +22,7 @@ const CALENDAR_ICON = Gio.ThemedIcon.new('x-office-calendar-symbolic');
 const ICONS_DIR = Gio.File.new_for_uri(import.meta.url).get_parent().get_child('icons');
 const POWER_ICON = Gio.FileIcon.new(ICONS_DIR.get_child('power-symbolic.svg'));
 const CLAUDE_ICON = Gio.FileIcon.new(ICONS_DIR.get_child('claude-symbolic.svg'));
+const CLICKUP_ICON = Gio.FileIcon.new(ICONS_DIR.get_child('clickup.svg'));
 
 function openWeatherApp() {
 	Main.overview.hide();
@@ -31,6 +35,7 @@ const ITEMS = [
 	{name: 'power', key: 'panel-power', positionKey: 'panel-power-position', hasMenu: true},
 	{name: 'weather', key: 'panel-weather', positionKey: 'panel-weather-position', onClick: openWeatherApp},
 	{name: 'claude', key: 'panel-claude', positionKey: 'panel-claude-position', hasMenu: true},
+	{name: 'clickup', key: 'panel-clickup', positionKey: 'panel-clickup-position', hasMenu: true, tabularLabel: true},
 	{name: 'calendar', key: 'panel-calendar', positionKey: 'panel-calendar-position', hasMenu: true},
 ];
 
@@ -52,12 +57,22 @@ function zoneFits(box) {
 	return (box === 'right' || natural(left) <= side) && (box === 'left' || natural(right) <= side);
 };
 
+function formatElapsed(ms) {
+	const seconds = Math.max(0, Math.floor(ms / 1000));
+	const pad = value => String(value).padStart(2, '0');
+
+	return `${Math.floor(seconds / 3600)}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`;
+};
+
 class PanelItem {
-	constructor(role, name, box, index, {onClick = null, hasMenu = false}) {
+	constructor(role, name, box, index, {onClick = null, hasMenu = false, tabularLabel = false}) {
 		this._box = box;
 		this._menuItems = [];
 		this._icon = new St.Icon({style_class: 'system-status-icon'});
-		this._label = new St.Label({style_class: 'widget-panel-label', y_align: Clutter.ActorAlign.CENTER});
+		this._label = new St.Label({
+			style_class: tabularLabel ? 'widget-panel-label widget-panel-tabular' : 'widget-panel-label',
+			y_align: Clutter.ActorAlign.CENTER,
+		});
 		this._content = new St.BoxLayout();
 		this._content.add_child(this._icon);
 		this._content.add_child(this._label);
@@ -116,6 +131,23 @@ class PanelItem {
 		});
 	};
 
+	setText(text) {
+		this._label.text = text;
+	};
+
+	// One clickable row under the informational ones; no callback hides it.
+	setMenuAction(label, callback) {
+		if (!this._menuAction) {
+			this._menuAction = new PopupMenu.PopupMenuItem(label);
+			this._menuAction.connect('activate', () => this._menuCallback?.());
+			this._button.menu.addMenuItem(this._menuAction);
+		};
+
+		this._menuCallback = callback;
+		this._menuAction.label.text = label;
+		this._menuAction.visible = Boolean(callback);
+	};
+
 	hide() {
 		this._button.visible = false;
 	};
@@ -133,6 +165,8 @@ export class PanelItems {
 		this._items = new Map();
 		this._weather = null;
 		this._unsubscribers = [];
+		this._timerStart = null;
+		this._tickId = 0;
 	};
 
 	// Rebuilds every item, which is what keeps their relative order fixed.
@@ -167,6 +201,10 @@ export class PanelItems {
 
 		if (this._items.has('claude')) {
 			this._unsubscribers.push(ClaudeWidget.subscribe(usage => this._showClaude(usage)));
+		};
+
+		if (this._items.has('clickup')) {
+			this._unsubscribers.push(ClickUp.subscribe(this._settings, ({timer}) => this._showTimer(timer)));
 		};
 
 		if (this._items.has('calendar')) {
@@ -267,7 +305,41 @@ export class PanelItems {
 		};
 	};
 
+	// Hidden with no timer running. The API is polled rarely, and the seconds
+	// are counted here from the start time it reported.
+	_showTimer(timer) {
+		const item = this._items.get('clickup');
+
+		if (!item) {
+			return;
+		};
+
+		if (!timer) {
+			this._stopTick();
+			item.hide();
+			return;
+		};
+
+		this._timerStart = timer.start;
+		item.setMenuLines([timer.name ?? _('No task')]);
+		item.setMenuAction(_('Open task'), timer.url ? () => ClickUp.openTask(timer.url) : null);
+		item.show(CLICKUP_ICON, formatElapsed(Date.now() - timer.start));
+
+		this._tickId ||= GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
+			this._items.get('clickup')?.setText(formatElapsed(Date.now() - this._timerStart));
+			return GLib.SOURCE_CONTINUE;
+		});
+	};
+
+	_stopTick() {
+		if (this._tickId) {
+			GLib.source_remove(this._tickId);
+			this._tickId = 0;
+		};
+	};
+
 	destroy() {
+		this._stopTick();
 		this._unsubscribers.forEach(unsubscribe => unsubscribe());
 		this._unsubscribers = [];
 

@@ -295,6 +295,54 @@ msgstr "немає"
 msgid "no schedule"
 msgstr "немає графіка"
 
+msgid "ClickUp token needed"
+msgstr "Потрібен токен ClickUp"
+
+msgid "Personal API token"
+msgstr "Особистий API-токен"
+
+msgid "Token saved; enter a new one to replace it"
+msgstr "Токен збережено; введи новий, щоб замінити"
+
+msgid "Forget the token"
+msgstr "Забути токен"
+
+msgid "Could not save the token"
+msgstr "Не вдалося зберегти токен"
+
+msgid "Refresh"
+msgstr "Оновити"
+
+msgid "Nothing here"
+msgstr "Тут порожньо"
+
+msgid "+%s more"
+msgstr "+%s ще"
+
+msgid "No task"
+msgstr "Без таски"
+
+msgid "Open task"
+msgstr "Відкрити таску"
+
+msgid "The token is kept in a separate file only you can read, not in the settings."
+msgstr "Токен зберігається окремим файлом, який можеш читати лише ти, а не в налаштуваннях."
+
+msgid "Only my tasks"
+msgstr "Лише мої таски"
+
+msgid "Status in the widget"
+msgstr "Статус у віджеті"
+
+msgid "List ID (empty: whole workspace)"
+msgstr "ID списку (порожньо: весь workspace)"
+
+msgid "Running timer, only while it runs"
+msgstr "Таймер, лише поки він іде"
+
+msgid "ClickUp"
+msgstr "ClickUp"
+
 msgid "Icon and the limit closest to running out"
 msgstr "Значок і ліміт, найближчий до вичерпання"
 

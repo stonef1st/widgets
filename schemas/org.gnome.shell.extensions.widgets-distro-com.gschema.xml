@@ -101,6 +101,41 @@
       <summary>Top bar side for the next event</summary>
       <description>Left goes after Activities, center before the clock, right before the system items.</description>
     </key>
+    <key name="panel-clickup" type="b">
+      <default>false</default>
+      <summary>Show the ClickUp timer in the top bar</summary>
+      <description>Appears only while a timer is running.</description>
+    </key>
+    <key name="panel-clickup-position" type="s">
+      <choices>
+        <choice value="left"/>
+        <choice value="center"/>
+        <choice value="right"/>
+      </choices>
+      <default>'right'</default>
+      <summary>Top bar side for the ClickUp timer</summary>
+      <description>Left goes after Activities, center before the clock, right before the system items.</description>
+    </key>
+    <key name="clickup-token-stamp" type="x">
+      <default>0</default>
+      <summary>When the ClickUp token last changed</summary>
+      <description>Tells the shell to reread the token file. Holds no secret.</description>
+    </key>
+    <key name="clickup-status" type="s">
+      <default>'to do'</default>
+      <summary>ClickUp status to list</summary>
+      <description>Status name as it is on the board.</description>
+    </key>
+    <key name="clickup-list-id" type="s">
+      <default>''</default>
+      <summary>ClickUp list id</summary>
+      <description>The number after /li in a copied list link. Empty means the whole workspace.</description>
+    </key>
+    <key name="clickup-only-mine" type="b">
+      <default>true</default>
+      <summary>Only tasks assigned to me</summary>
+      <description>Otherwise everyone's tasks in that status are listed.</description>
+    </key>
     <key name="calendar-show-events" type="b">
       <default>true</default>
       <summary>Show calendar events</summary>
