@@ -28,6 +28,11 @@ const LIMITS = [
 	['five_hour', 'Session (5 h)'],
 	['seven_day', 'Week'],
 ];
+// The panel item stays hidden until a limit reaches its threshold.
+const PANEL_THRESHOLDS = {
+	five_hour: 50,
+	seven_day: 75,
+};
 
 Gio._promisify(Gio.File.prototype, 'load_contents_async');
 
@@ -204,9 +209,15 @@ function usageSummary() {
 	};
 
 	const known = LIMITS.map(([key]) => limitPercentage(state.data[key])).filter(value => value !== null);
+	const alerting = LIMITS
+		.map(([key]) => [limitPercentage(state.data[key]), PANEL_THRESHOLDS[key]])
+		.filter(([value, threshold]) => value !== null && value >= threshold)
+		.map(([value]) => value);
 
 	return {
 		percentage: known.length > 0 ? Math.max(...known) : null,
+		// Highest limit past its panel threshold, null while all are calm.
+		alertPercentage: alerting.length > 0 ? Math.max(...alerting) : null,
 		lines: LIMITS.map(([key, title]) => {
 			const limit = state.data[key];
 			const percentage = limitPercentage(limit);

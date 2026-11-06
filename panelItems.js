@@ -282,6 +282,8 @@ export class PanelItems {
 		item.fitLabel([time]);
 	};
 
+	// Silent until the session reaches 50% or the week 75%. Sign-in problems
+	// stay silent too: the token lapses whenever Claude Code is closed.
 	_showClaude(usage) {
 		const item = this._items.get('claude');
 
@@ -289,20 +291,15 @@ export class PanelItems {
 			return;
 		};
 
-		if (!usage) {
+		const percentage = usage?.alertPercentage ?? null;
+
+		if (percentage === null) {
 			item.hide();
 			return;
 		};
 
-		const {percentage, lines} = usage;
-
-		item.setMenuLines(lines);
-
-		if (percentage === null) {
-			item.show(CLAUDE_ICON, '—', {styleClass: 'widget-panel-muted'});
-		} else {
-			item.show(CLAUDE_ICON, `${percentage}%`, {iconColor: ClaudeWidget.usageColor(percentage, this._getTheme())});
-		};
+		item.setMenuLines(usage.lines);
+		item.show(CLAUDE_ICON, `${percentage}%`, {iconColor: ClaudeWidget.usageColor(percentage, this._getTheme())});
 	};
 
 	// Hidden with no timer running. The API is polled rarely, and the seconds
