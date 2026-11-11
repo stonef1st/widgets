@@ -9,6 +9,7 @@ import { forgetToken, hasToken, saveToken } from './clickup.js';
 import { _, availableLanguages, setLanguage } from './i18n.js';
 import { createSession, fetchJson } from './net.js';
 import { GROUPS, PROVIDERS, groupLabel } from './outages.js';
+import { ADAPTERS } from './planned.js';
 
 // Language names are shown in their own language, never translated.
 const LANGUAGE_NAMES = {
@@ -71,6 +72,7 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 		page.add(this._calendarGroup(settings));
 		page.add(this._alertsGroup(settings));
 		page.add(this._outagesGroup(settings));
+		page.add(this._addressOutagesGroup(settings));
 		page.add(this._claudeGroup(settings));
 		page.add(this._clickUpGroup(settings));
 	};
@@ -299,6 +301,51 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 		}));
 		this._addPanelRows(group, settings, 'panel-power', _('Only before and during an outage'));
 
+		return group;
+	};
+
+	// Planned and emergency outages by address, for providers with an adapter.
+	_addressOutagesGroup(settings) {
+		const group = new Adw.PreferencesGroup({
+			title: _('Outages by address'),
+			description: _('Planned works and emergency outages from the oblenergo website. Write the address as the website does; street words may go in any order.'),
+		});
+		const areaRows = Object.entries(ADAPTERS).map(([provider, adapter]) => {
+			const row = stringComboRow({
+				title: _('Network district'),
+				subtitle: adapter.source,
+				values: ['', ...adapter.areas.map(([id]) => id)],
+				labels: [_('Not set'), ...adapter.areas.map(([, name]) => name)],
+				settings,
+				key: 'outage-area',
+			});
+
+			group.add(row);
+			return [provider, row];
+		});
+		const unsupported = new Adw.ActionRow({title: _('Not available for this provider yet')});
+
+		group.add(unsupported);
+		group.add(this._entryRow(settings, 'outage-city', _('Settlement')));
+		group.add(this._entryRow(settings, 'outage-street', _('Street')));
+		group.add(this._entryRow(settings, 'outage-house', _('House')));
+
+		const sync = () => {
+			const provider = settings.get_string('outage-provider');
+			const supported = provider in ADAPTERS;
+
+			for (const [id, row] of areaRows) {
+				row.visible = id === provider;
+			};
+
+			unsupported.visible = !supported;
+			group.sensitive = supported;
+		};
+
+		sync();
+		const handler = settings.connect('changed::outage-provider', sync);
+
+		group.connect('destroy', () => settings.disconnect(handler));
 		return group;
 	};
 };

@@ -393,3 +393,33 @@ msgstr "Токен входу прострочено"
 
 msgid "Week"
 msgstr "Тиждень"
+
+msgid "Planned"
+msgstr "Планове"
+
+msgid "Emergency"
+msgstr "Аварійне"
+
+msgid "%s until %s"
+msgstr "%s до %s"
+
+msgid "Outages by address"
+msgstr "Відключення за адресою"
+
+msgid "Planned works and emergency outages from the oblenergo website. Write the address as the website does; street words may go in any order."
+msgstr "Планові роботи та аварійні відключення з сайту обленерго. Адресу пишіть як на сайті; слова в назві вулиці можна в будь-якому порядку."
+
+msgid "Network district"
+msgstr "РЕМ"
+
+msgid "Not available for this provider yet"
+msgstr "Для цього обленерго поки недоступно"
+
+msgid "Settlement"
+msgstr "Населений пункт"
+
+msgid "Street"
+msgstr "Вулиця"
+
+msgid "House"
+msgstr "Будинок"

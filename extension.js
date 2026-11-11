@@ -586,7 +586,7 @@ class WidgetController {
       AlertsWidget.refresh();
     };
 
-    if (key === 'outage-provider' || key === 'outage-group') {
+    if (key.startsWith('outage-')) {
       PowerWidget.refresh();
     };
 

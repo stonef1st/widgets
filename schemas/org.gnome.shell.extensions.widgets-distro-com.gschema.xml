@@ -171,5 +171,25 @@
       <summary>Power outage group</summary>
       <description>Queue and subqueue, e.g. 'GPV3.1'.</description>
     </key>
+    <key name="outage-area" type="s">
+      <default>''</default>
+      <summary>Network district for address outages</summary>
+      <description>Provider-specific district id for planned and emergency outages, e.g. '23' for the Kamianets-Podilskyi district on hoe.com.ua.</description>
+    </key>
+    <key name="outage-city" type="s">
+      <default>''</default>
+      <summary>Settlement for address outages</summary>
+      <description>As written on the oblenergo website, e.g. 'Кам'янець-Подільський'.</description>
+    </key>
+    <key name="outage-street" type="s">
+      <default>''</default>
+      <summary>Street for address outages</summary>
+      <description>Street name words in any order, without the street type.</description>
+    </key>
+    <key name="outage-house" type="s">
+      <default>''</default>
+      <summary>House number for address outages</summary>
+      <description>Empty matches any house on the street.</description>
+    </key>
   </schema>
 </schemalist>

@@ -7,7 +7,8 @@ import St from 'gi://St';
 import { _, format, intlLocale } from '../../i18n.js';
 import { warn } from '../../logger.js';
 import { createSession, fetchJson } from '../../net.js';
-import { DATA_URL, PROVIDERS, SLOTS_PER_DAY, groupLabel, scheduleStatus } from '../../outages.js';
+import { DATA_URL, PROVIDERS, SLOTS_PER_DAY, groupLabel, kyivNow, midnightUnix, scheduleStatus } from '../../outages.js';
+import { ADAPTERS, matchAddress } from '../../planned.js';
 
 export const type = 'power';
 export const label = 'Power Outages';
@@ -22,7 +23,12 @@ const SLOT_COLORS = {
 	off: '#e01b24',
 	maybe: '#f6d32d',
 	unknown: null,
+	// Address outages announced by the oblenergo, on top of the queue schedule.
+	planned: '#c061cb',
+	emergency: '#ff7800',
 };
+// Planned works change rarely and their page is heavy; emergencies follow FETCH_SECONDS.
+const PLANNED_FETCH_MS = 30 * 60 * 1000;
 
 const state = {
 	session: null,
@@ -34,6 +40,10 @@ const state = {
 	data: null,
 	error: false,
 	settings: null,
+	// Address outages: raw events per kind for eventsArea ('provider|area').
+	eventsArea: null,
+	events: {planned: null, emergency: null},
+	plannedAt: 0,
 };
 const liveBodies = new Map();
 const listeners = new Set();
@@ -52,6 +62,57 @@ function providerName(provider) {
 	return entry ? _(entry[1]) : provider;
 };
 
+function isCancelled(error) {
+	return error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED);
+};
+
+async function fetchSchedule(provider) {
+	try {
+		const data = await fetchJson(state.session, format(DATA_URL, provider), state.cancellable);
+
+		state.provider = provider;
+		state.data = data;
+		state.error = false;
+	} catch (error) {
+		if (!isCancelled(error)) {
+			warn('outages-fetch', `Could not fetch outage schedule: ${error.message}`);
+			state.error = true;
+		};
+	};
+};
+
+async function fetchEvents(provider) {
+	const adapter = ADAPTERS[provider];
+	const area = state.settings?.get_string('outage-area') ?? '';
+	const areaKey = `${provider}|${area}`;
+
+	if (!adapter || !area) {
+		return;
+	};
+
+	if (state.eventsArea !== areaKey) {
+		state.eventsArea = areaKey;
+		state.events = {planned: null, emergency: null};
+		state.plannedAt = 0;
+	};
+
+	const kinds = Date.now() - state.plannedAt >= PLANNED_FETCH_MS ? ['emergency', 'planned'] : ['emergency'];
+
+	await Promise.all(kinds.map(async kind => {
+		try {
+			state.events[kind] = await adapter.fetch(state.session, area, kind, state.cancellable);
+
+			if (kind === 'planned') {
+				state.plannedAt = Date.now();
+			};
+		} catch (error) {
+			if (!isCancelled(error)) {
+				warn(`outages-${kind}`, `Could not fetch ${kind} outages from ${adapter.source}: ${error.message}`);
+			};
+		};
+	}));
+};
+
 async function fetchData() {
 	const provider = state.settings?.get_string('outage-provider') ?? '';
 
@@ -61,21 +122,75 @@ async function fetchData() {
 
 	state.fetching = true;
 	try {
-		const data = await fetchJson(state.session, format(DATA_URL, provider), state.cancellable);
-
-		state.provider = provider;
-		state.data = data;
-		state.error = false;
-	} catch (error) {
-		if (!error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) {
-			warn('outages-fetch', `Could not fetch outage schedule: ${error.message}`);
-			state.error = true;
-		};
+		await Promise.all([fetchSchedule(provider), fetchEvents(provider)]);
 	} finally {
 		state.fetching = false;
 	};
 
 	rerender();
+};
+
+// Address outages that are on or ahead, sorted by start. Empty until the
+// area and the address are set.
+function addressEvents(settings) {
+	const get = key => settings?.get_string(key) ?? '';
+	const areaKey = `${get('outage-provider')}|${get('outage-area')}`;
+
+	if (state.eventsArea !== areaKey) {
+		return [];
+	};
+
+	const now = Date.now();
+	const events = [...(state.events.planned ?? []), ...(state.events.emergency ?? [])];
+
+	return matchAddress(events, {city: get('outage-city'), street: get('outage-street'), house: get('outage-house')})
+		.filter(event => event.end > now);
+};
+
+function splitEvents(events) {
+	const now = Date.now();
+
+	return {
+		active: events.find(event => event.start <= now) ?? null,
+		upcoming: events.find(event => event.start > now) ?? null,
+	};
+};
+
+function formatDay(date) {
+	return date.toLocaleDateString(intlLocale(), {day: '2-digit', month: '2-digit', timeZone: 'Europe/Kyiv'});
+};
+
+function kindLabel(event) {
+	return event.kind === 'planned' ? _('Planned') : _('Emergency');
+};
+
+// "Планове · 11:20–20:20", with dates when not today.
+function eventLabel(event) {
+	const today = formatDay(new Date());
+	const startDay = formatDay(event.start);
+	const endDay = formatDay(event.end);
+	const start = `${startDay === today ? '' : `${startDay} `}${formatTime(event.start)}`;
+	const end = event.endKnown ? `${endDay === startDay ? '' : `${endDay} `}${formatTime(event.end)}` : '?';
+
+	return `${kindLabel(event)} · ${start}–${end}`;
+};
+
+// Paints address outages over the queue slots of one day. Queue outages
+// stay on top, so the strip still shows when the queue is off.
+function withEvents(slots, events, dayUnix) {
+	const result = slots ? [...slots] : new Array(SLOTS_PER_DAY).fill('unknown');
+
+	for (const event of events) {
+		for (let slot = 0; slot < SLOTS_PER_DAY; slot++) {
+			const from = (dayUnix + slot * 30 * 60) * 1000;
+
+			if (result[slot] !== 'off' && event.start.getTime() < from + 30 * 60 * 1000 && event.end.getTime() > from) {
+				result[slot] = event.kind;
+			};
+		};
+	};
+
+	return result;
 };
 
 function start(settings) {
@@ -168,17 +283,36 @@ function panelSummary() {
 	const group = state.settings?.get_string('outage-group') ?? '';
 	const data = state.provider === provider ? state.data : null;
 	const status = provider && group && data ? scheduleStatus(data, group) : null;
+	const events = addressEvents(state.settings);
+	const {active, upcoming} = splitEvents(events);
 
-	if (!status?.today) {
+	if (!status?.today && events.length === 0) {
 		return null;
 	};
 
-	const {current, next, today, tomorrow} = status;
-	const lines = [
-		`${statusTitle(current)} · ${nextLabel(status)}`,
-		`${_('Today')}: ${outageRanges(today)}`,
-		`${_('Tomorrow')}: ${tomorrow ? outageRanges(tomorrow) : _('no schedule')}`,
-	];
+	const lines = events.slice(0, 3).map(eventLabel);
+
+	if (status?.today) {
+		// The queue status line would claim power during an address outage.
+		if (!active) {
+			lines.push(`${statusTitle(status.current)} · ${nextLabel(status)}`);
+		};
+
+		lines.push(
+			`${_('Today')}: ${outageRanges(status.today)}`,
+			`${_('Tomorrow')}: ${status.tomorrow ? outageRanges(status.tomorrow) : _('no schedule')}`,
+		);
+	};
+
+	if (active) {
+		return {
+			text: active.endKnown ? format(_('until %s'), formatTime(active.end)) : kindLabel(active),
+			color: SLOT_COLORS[active.kind],
+			lines,
+		};
+	};
+
+	const {current, next} = status ?? {};
 
 	if (current === 'off' || current === 'maybe') {
 		return {
@@ -188,9 +322,18 @@ function panelSummary() {
 		};
 	};
 
-	const minutes = next ? (next.at - Date.now()) / 60000 : Infinity;
+	const minutes = current === 'on' && ['off', 'maybe'].includes(next?.state) ? (next.at - Date.now()) / 60000 : Infinity;
+	const eventMinutes = upcoming ? (upcoming.start - Date.now()) / 60000 : Infinity;
 
-	if (current !== 'on' || !['off', 'maybe'].includes(next?.state) || minutes > PANEL_AHEAD_MINUTES) {
+	if (eventMinutes <= PANEL_AHEAD_MINUTES && eventMinutes <= minutes) {
+		return {
+			text: formatTime(upcoming.start),
+			color: eventMinutes <= PANEL_SOON_MINUTES ? SLOT_COLORS.maybe : null,
+			lines,
+		};
+	};
+
+	if (minutes > PANEL_AHEAD_MINUTES) {
 		return null;
 	};
 
@@ -396,10 +539,13 @@ function build(body, {createLabel, theme, settings}) {
 	const header = new St.BoxLayout({style_class: 'widget-power-header'});
 	const data = state.provider === provider ? state.data : null;
 	const status = provider && group && data ? scheduleStatus(data, group) : null;
+	const events = addressEvents(settings);
+	const {active, upcoming} = splitEvents(events);
+	const iconState = active?.kind ?? status?.current;
 	const icon = new St.Icon({
 		icon_name: 'ac-adapter-symbolic',
 		style_class: 'widget-power-icon',
-		style: `color: ${status?.current ? SLOT_COLORS[status.current] ?? theme.muted : theme.muted};`,
+		style: `color: ${iconState ? SLOT_COLORS[iconState] ?? theme.muted : theme.muted};`,
 	});
 	const title = provider && group
 		? format(_('Group %s'), groupLabel(group))
@@ -424,18 +570,33 @@ function build(body, {createLabel, theme, settings}) {
 		return;
 	};
 
-	if (!status.today) {
+	const todayUnix = midnightUnix(kyivNow());
+	const todayEnd = (todayUnix + 24 * 3600) * 1000;
+	const eventsToday = events.filter(event => event.start.getTime() < todayEnd);
+
+	if (active) {
+		body.add_child(createLabel(statusTitle('off'), 'widget-power-title', `color: ${theme.text};`));
+		body.add_child(createLabel(active.endKnown
+			? format(_('%s until %s'), kindLabel(active), formatTime(active.end))
+			: kindLabel(active), 'widget-power-detail', `color: ${theme.muted};`));
+	} else if (status.today) {
+		body.add_child(createLabel(statusTitle(status.current), 'widget-power-title', `color: ${theme.text};`));
+		body.add_child(createLabel(nextLabel(status), 'widget-power-detail', `color: ${theme.muted};`));
+	} else {
 		body.add_child(createLabel(_('No schedule today'), 'widget-power-title', `color: ${theme.text};`));
 		if (status.updated) {
 			body.add_child(createLabel(format(_('Last schedule: %s'), status.updated), 'widget-power-detail', `color: ${theme.muted};`));
 		};
-		return;
 	};
 
-	body.add_child(createLabel(statusTitle(status.current), 'widget-power-title', `color: ${theme.text};`));
-	body.add_child(createLabel(nextLabel(status), 'widget-power-detail', `color: ${theme.muted};`));
-	body.add_child(buildStrip(status.today, status.slot, theme));
-	body.add_child(buildScale(createLabel, theme));
+	if (upcoming) {
+		body.add_child(createLabel(eventLabel(upcoming), 'widget-power-detail', `color: ${SLOT_COLORS[upcoming.kind]};`));
+	};
+
+	if (status.today || eventsToday.length > 0) {
+		body.add_child(buildStrip(withEvents(status.today, eventsToday, todayUnix), status.slot, theme));
+		body.add_child(buildScale(createLabel, theme));
+	};
 };
 
 export function render(context) {

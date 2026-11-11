@@ -41,11 +41,11 @@ export function groupLabel(group) {
 	return group.replace(/^GPV/, '');
 };
 
-function kyivNow() {
+export function kyivNow() {
 	return GLib.DateTime.new_now(GLib.TimeZone.new(TIME_ZONE));
 };
 
-function midnightUnix(dateTime) {
+export function midnightUnix(dateTime) {
 	return GLib.DateTime.new(dateTime.get_timezone(), dateTime.get_year(), dateTime.get_month(), dateTime.get_day_of_month(), 0, 0, 0).to_unix();
 };
 
