@@ -81,6 +81,22 @@ async function fetchSchedule(provider) {
 	};
 };
 
+function eventKey(event) {
+	return [event.kind, event.start.getTime(), event.end.getTime(), event.city, ...event.streets.map(street => street.name)].join('|');
+};
+
+// Sites drop the day's list in the evening, outages still running included
+// (hoe.com.ua switches to tomorrow). An outage that has started stays until
+// its announced end; one that vanished before starting counts as cancelled.
+function keepStarted(previous, fresh) {
+	const now = Date.now();
+	const known = new Set(fresh.map(eventKey));
+	const running = (previous ?? []).filter(event =>
+		event.start <= now && event.end > now && !known.has(eventKey(event)));
+
+	return [...fresh, ...running];
+};
+
 async function fetchEvents(provider) {
 	const adapter = ADAPTERS[provider];
 	const area = state.settings?.get_string('outage-area') ?? '';
@@ -100,7 +116,9 @@ async function fetchEvents(provider) {
 
 	await Promise.all(kinds.map(async kind => {
 		try {
-			state.events[kind] = await adapter.fetch(state.session, area, kind, state.cancellable);
+			const fresh = await adapter.fetch(state.session, area, kind, state.cancellable);
+
+			state.events[kind] = keepStarted(state.events[kind], fresh);
 
 			if (kind === 'planned') {
 				state.plannedAt = Date.now();
