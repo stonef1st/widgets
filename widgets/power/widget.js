@@ -7,7 +7,7 @@ import St from 'gi://St';
 import { _, format, intlLocale } from '../../i18n.js';
 import { warn } from '../../logger.js';
 import { createSession, fetchJson } from '../../net.js';
-import { DATA_URL, PROVIDERS, SLOTS_PER_DAY, groupLabel, kyivNow, midnightUnix, scheduleStatus } from '../../outages.js';
+import { DATA_URL, PROVIDERS, SCHEDULE_FALLBACKS, SLOTS_PER_DAY, groupLabel, kyivNow, midnightUnix, missingDays, scheduleStatus } from '../../outages.js';
 import { ADAPTERS, matchAddress } from '../../planned.js';
 
 export const type = 'power';
@@ -66,10 +66,35 @@ function isCancelled(error) {
 	return error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED);
 };
 
+// Today or tomorrow missing upstream comes from the oblenergo's own site.
+async function fillMissingDays(provider, data) {
+	const fallback = SCHEDULE_FALLBACKS[provider];
+	const wanted = missingDays(data);
+
+	if (!fallback || Object.keys(wanted).length === 0) {
+		return;
+	};
+
+	try {
+		const days = await fallback.fetchDays(state.session, wanted, state.cancellable);
+
+		data.fact ??= {};
+		data.fact.data ??= {};
+		Object.assign(data.fact.data, days);
+	} catch (error) {
+		if (isCancelled(error)) {
+			throw error;
+		};
+
+		warn('outages-fallback', `Could not fetch outage schedule from ${fallback.source}: ${error.message}`);
+	};
+};
+
 async function fetchSchedule(provider) {
 	try {
 		const data = await fetchJson(state.session, format(DATA_URL, provider), state.cancellable);
 
+		await fillMissingDays(provider, data);
 		state.provider = provider;
 		state.data = data;
 		state.error = false;
