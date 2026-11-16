@@ -12,18 +12,8 @@ export const TIME_ZONE = 'Europe/Kyiv';
 export const SLOTS_PER_DAY = 48;
 
 export const PROVIDERS = [
-	['Cherkasyoblenergo', 'Cherkasy Oblenergo'],
-	['Chernihivoblenergo', 'Chernihiv Oblenergo'],
-	['Kharkivoblenerho', 'Kharkiv Oblenergo'],
 	['Khmelnytskoblenerho', 'Khmelnytskyi Oblenergo'],
-	['Lvivoblenerho', 'Lviv Oblenergo'],
-	['Poltavaoblenergo', 'Poltava Oblenergo'],
-	['Prykarpattiaoblenerho', 'Prykarpattia Oblenergo'],
-	['Rivneoblenergo', 'Rivne Oblenergo'],
-	['Ternopiloblenerho', 'Ternopil Oblenergo'],
-	['Zakarpattiaoblenerho', 'Zakarpattia Oblenergo'],
 	['Zaporizhzhiaoblenergo', 'Zaporizhzhia Oblenergo'],
-	['Zhytomyroblenergo', 'Zhytomyr Oblenergo'],
 ];
 
 export const GROUPS = [1, 2, 3, 4, 5, 6].flatMap(queue => [`GPV${queue}.1`, `GPV${queue}.2`]);

@@ -49,12 +49,6 @@ msgstr "Змінити розмір віджета"
 msgid "Chemical threat"
 msgstr "Хімічна загроза"
 
-msgid "Cherkasy Oblenergo"
-msgstr "Черкасиобленерго"
-
-msgid "Chernihiv Oblenergo"
-msgstr "Чернігівобленерго"
-
 msgid "Choose a region"
 msgstr "Оберіть регіон"
 
@@ -109,9 +103,6 @@ msgstr "Погодинні графіки (ГПВ) з github.com/yaroslav2901/OE
 msgid "Keyboard"
 msgstr "Клавіатура"
 
-msgid "Kharkiv Oblenergo"
-msgstr "Харківобленерго"
-
 msgid "Khmelnytskyi Oblenergo"
 msgstr "Хмельницькобленерго"
 
@@ -126,9 +117,6 @@ msgstr "Завантаження регіонів…"
 
 msgid "Loading…"
 msgstr "Завантаження…"
-
-msgid "Lviv Oblenergo"
-msgstr "Львівобленерго"
 
 msgid "Monday"
 msgstr "Понеділок"
@@ -178,9 +166,6 @@ msgstr "Відкрийте налаштування розширення"
 msgid "Outage at %s"
 msgstr "Відключення о %s"
 
-msgid "Poltava Oblenergo"
-msgstr "Полтаваобленерго"
-
 msgid "Possible outage"
 msgstr "Можливе відключення"
 
@@ -202,9 +187,6 @@ msgstr "Світло є"
 msgid "Provider"
 msgstr "Постачальник"
 
-msgid "Prykarpattia Oblenergo"
-msgstr "Прикарпаттяобленерго"
-
 msgid "Queue and subqueue"
 msgstr "Черга та підчерга"
 
@@ -223,9 +205,6 @@ msgstr "Перевідкрийте налаштування, щоб побачи
 msgid "Reset Default Widgets"
 msgstr "Скинути до типових"
 
-msgid "Rivne Oblenergo"
-msgstr "Рівнеобленерго"
-
 msgid "Schedule ends at %s"
 msgstr "Графік закінчується о %s"
 
@@ -237,9 +216,6 @@ msgstr "З %s"
 
 msgid "Sunday"
 msgstr "Неділя"
-
-msgid "Ternopil Oblenergo"
-msgstr "Тернопільобленерго"
 
 msgid "Today"
 msgstr "Сьогодні"
@@ -265,14 +241,8 @@ msgstr "Погода недоступна"
 msgid "Widgets"
 msgstr "Віджети"
 
-msgid "Zakarpattia Oblenergo"
-msgstr "Закарпаттяобленерго"
-
 msgid "Zaporizhzhia Oblenergo"
 msgstr "Запоріжжяобленерго"
-
-msgid "Zhytomyr Oblenergo"
-msgstr "Житомиробленерго"
 
 msgid "Show in the top bar"
 msgstr "Показувати на верхній панелі"
