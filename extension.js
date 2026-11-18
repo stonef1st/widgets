@@ -20,6 +20,7 @@ import * as WeatherWidget from './widgets/weather/widget.js';
 import { configureLogger, resetLogger, warn } from './logger.js';
 import { _, format, setLanguage } from './i18n.js';
 import { refresh as refreshClickUp } from './clickup.js';
+import * as ClickUpNotifications from './clickupNotifications.js';
 import { wrapInGlass } from './glass.js';
 import { PanelItems } from './panelItems.js';
 import { WorkspaceIntegration } from './workspaceIntegration.js';
@@ -594,7 +595,8 @@ class WidgetController {
       this._panelItems.sync();
     };
 
-    if (key.startsWith('clickup-')) {
+    // Turning notifications on or off changes nothing to fetch.
+    if (key.startsWith('clickup-') && key !== 'clickup-notify') {
       refreshClickUp();
     };
 
@@ -1314,6 +1316,7 @@ export default class DesktopWidgetsExtension extends Extension {
   enable() {
     configureLogger(this.getLogger());
     this._loadWidgetStylesheets();
+    ClickUpNotifications.enable();
     this._controller = new WidgetController(this);
     this._controller.enable();
   };
@@ -1324,6 +1327,7 @@ export default class DesktopWidgetsExtension extends Extension {
     for (const widgetModule of WIDGET_MODULES) {
       widgetModule.cleanup?.();
     };
+    ClickUpNotifications.disable();
     this._unloadWidgetStylesheets();
     resetLogger();
   };

@@ -301,6 +301,15 @@ msgstr "Токен зберігається окремим файлом, яки�
 msgid "Only my tasks"
 msgstr "Лише мої таски"
 
+msgid "Notify when a new task appears in this status"
+msgstr "Сповіщати, коли в цьому статусі з'являється нова таска"
+
+msgid "New task in “%s”"
+msgstr "Нова таска в «%s»"
+
+msgid "New tasks in “%s”: %s"
+msgstr "Нові таски в «%s»: %s"
+
 msgid "Status in the widget"
 msgstr "Статус у віджеті"
 

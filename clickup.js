@@ -36,8 +36,14 @@ const state = {
 	fetchingTimer: false,
 	// null | 'token' (missing or rejected) | 'error'
 	problem: null,
+	// Ids from the last successful fetch, and the query they came from. New
+	// tasks are only those missing from a list fetched with the same query.
+	knownIds: null,
+	knownQuery: null,
 };
 const listeners = new Set();
+// Set by the shell side, the preferences window never notifies.
+let notifier = null;
 const failedAvatars = new Set();
 
 function snapshot() {
@@ -189,6 +195,24 @@ function byDueDate(a, b) {
 	return (a.due ?? Infinity) - (b.due ?? Infinity);
 };
 
+// The first list after a start or a settings change only becomes the baseline,
+// otherwise every task already there would be announced.
+function announceNewTasks(tasks, queryKey, status) {
+	const baseline = state.knownIds && state.knownQuery === queryKey ? state.knownIds : null;
+	const added = baseline ? tasks.filter(task => !baseline.has(task.id)) : [];
+
+	state.knownIds = new Set(tasks.map(task => task.id));
+	state.knownQuery = queryKey;
+
+	if (added.length > 0 && notifier && state.settings?.get_boolean('clickup-notify')) {
+		try {
+			notifier(added, status);
+		} catch (error) {
+			warn('clickup-notify', `Could not show a ClickUp notification: ${error.message}`);
+		};
+	};
+};
+
 async function fetchTasks() {
 	if (state.fetchingTasks) {
 		return;
@@ -209,8 +233,10 @@ async function fetchTasks() {
 		};
 
 		const {tasks} = await get(`/team/${state.teamId}/task?${query.join('&')}`);
+		const queryKey = `${state.teamId}?${query.join('&')}`;
 
 		state.tasks = (tasks ?? []).map(taskFromApi).sort(byDueDate);
+		announceNewTasks(state.tasks, queryKey, status);
 	});
 	state.fetchingTasks = false;
 	notifyListeners();
@@ -277,6 +303,8 @@ function stop() {
 	state.session = null;
 	state.fetchingTasks = false;
 	state.fetchingTimer = false;
+	state.knownIds = null;
+	state.knownQuery = null;
 };
 
 // The listener gets {problem, tasks, timer, avatarsVersion} now and after every fetch.
@@ -315,6 +343,11 @@ export function refreshNow() {
 
 	fetchTimer();
 	return fetchTasks();
+};
+
+// The handler gets the newly listed tasks and the status name. Null removes it.
+export function setNotifier(handler) {
+	notifier = handler;
 };
 
 export function hasToken() {

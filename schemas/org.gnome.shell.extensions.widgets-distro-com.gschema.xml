@@ -141,6 +141,11 @@
       <summary>Only tasks assigned to me</summary>
       <description>Otherwise everyone's tasks in that status are listed.</description>
     </key>
+    <key name="clickup-notify" type="b">
+      <default>true</default>
+      <summary>Notify about new tasks</summary>
+      <description>Show a notification when a task appears in the listed status: created there, moved in, or newly assigned.</description>
+    </key>
     <key name="calendar-show-events" type="b">
       <default>true</default>
       <summary>Show calendar events</summary>

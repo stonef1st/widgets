@@ -148,12 +148,18 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 			description: _('The token is kept in a separate file only you can read, not in the settings.'),
 		});
 		const mineRow = new Adw.SwitchRow({title: _('Only my tasks')});
+		const notifyRow = new Adw.SwitchRow({
+			title: _('Notifications'),
+			subtitle: _('Notify when a new task appears in this status'),
+		});
 
 		group.add(this._tokenRow(settings));
 		group.add(this._entryRow(settings, 'clickup-status', _('Status in the widget')));
 		group.add(this._entryRow(settings, 'clickup-list-id', _('List ID (empty: whole workspace)')));
 		settings.bind('clickup-only-mine', mineRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 		group.add(mineRow);
+		settings.bind('clickup-notify', notifyRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+		group.add(notifyRow);
 		this._addPanelRows(group, settings, 'panel-clickup', _('Running timer, only while it runs'));
 		return group;
 	};
