@@ -228,8 +228,10 @@ async function fetchTasks() {
 			query.push(`assignees%5B%5D=${state.userId}`);
 		};
 
+		// Without include_timl the list filter only matches a task's home list,
+		// so tasks added to this list from another one would be missed.
 		if (listId) {
-			query.push(`list_ids%5B%5D=${encodeURIComponent(listId)}`);
+			query.push(`list_ids%5B%5D=${encodeURIComponent(listId)}`, 'include_timl=true');
 		};
 
 		const {tasks} = await get(`/team/${state.teamId}/task?${query.join('&')}`);
