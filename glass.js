@@ -21,8 +21,8 @@ const TINTS = {
 // Danger glass (air alert, no power) is the wallpaper's brightness painted red:
 // mixing red into a colored wallpaper turned it brown on green and purple on blue.
 // The range keeps white text readable on the lightest wallpapers.
-const DANGER_SHADOW = [0.42, 0.04, 0.07];
-const DANGER_LIGHT = [0.80, 0.13, 0.17];
+const DANGER_SHADOW = [0.28, 0.02, 0.05];
+const DANGER_LIGHT = [0.98, 0.20, 0.24];
 const DANGER_EASE_MS = 300;
 
 const DECLARATIONS = `

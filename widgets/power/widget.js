@@ -47,6 +47,13 @@ const state = {
 };
 const liveBodies = new Map();
 const listeners = new Set();
+// Tomorrow's schedule is a second page once it is published (usually the
+// evening before). Page and page count by widget id, kept across rerenders.
+const pages = new Map();
+const pageCounts = new Map();
+// Touchpads send a burst of smooth-scroll events per swipe.
+const FLIP_COOLDOWN_MS = 400;
+let lastFlip = 0;
 
 // How long before an outage the top bar item appears, and turns yellow.
 const PANEL_AHEAD_MINUTES = 120;
@@ -576,7 +583,7 @@ function buildScale(createLabel, theme) {
 	return scale;
 };
 
-function build(body, {createLabel, theme: baseTheme, settings, setDanger}) {
+function build(body, {createLabel, theme: baseTheme, settings, setDanger, widget}) {
 	const provider = settings?.get_string('outage-provider') ?? '';
 	const group = settings?.get_string('outage-group') ?? '';
 	const header = new St.BoxLayout({style_class: 'widget-power-header'});
@@ -608,6 +615,8 @@ function build(body, {createLabel, theme: baseTheme, settings, setDanger}) {
 	body.add_child(header);
 	body.add_child(new St.Widget({y_expand: true}));
 
+	pageCounts.set(widget?.id, 1);
+
 	if (!provider || !group) {
 		body.add_child(createLabel(_('Choose your group'), 'widget-power-title', `color: ${theme.text};`));
 		body.add_child(createLabel(_('Open extension settings'), 'widget-power-detail', `color: ${theme.muted};`));
@@ -623,6 +632,21 @@ function build(body, {createLabel, theme: baseTheme, settings, setDanger}) {
 	const todayUnix = midnightUnix(kyivNow());
 	const todayEnd = (todayUnix + 24 * 3600) * 1000;
 	const eventsToday = events.filter(event => event.start.getTime() < todayEnd);
+	const pageCount = status.tomorrow ? 2 : 1;
+	const page = Math.min(pages.get(widget?.id) ?? 0, pageCount - 1);
+
+	pageCounts.set(widget?.id, pageCount);
+
+	if (page === 1) {
+		const tomorrowUnix = todayUnix + 24 * 3600;
+
+		body.add_child(createLabel(_('Tomorrow'), 'widget-power-title', `color: ${theme.text};`));
+		body.add_child(createLabel(outageRanges(status.tomorrow), 'widget-power-detail', `color: ${theme.muted};`));
+		body.add_child(buildStrip(withEvents(status.tomorrow, events, tomorrowUnix), -1, theme));
+		body.add_child(buildScale(createLabel, theme));
+		body.add_child(buildPageDots(page, pageCount, theme));
+		return;
+	};
 
 	if (active) {
 		body.add_child(createLabel(statusTitle('off'), 'widget-power-title', `color: ${theme.text};`));
@@ -647,6 +671,71 @@ function build(body, {createLabel, theme: baseTheme, settings, setDanger}) {
 		body.add_child(buildStrip(withEvents(status.today, eventsToday, todayUnix), status.slot, theme));
 		body.add_child(buildScale(createLabel, theme));
 	};
+
+	if (pageCount > 1) {
+		body.add_child(buildPageDots(page, pageCount, theme));
+	};
+};
+
+function buildPageDots(page, pageCount, theme) {
+	const dots = new St.BoxLayout({
+		style_class: 'widget-power-pages',
+		x_align: Clutter.ActorAlign.CENTER,
+	});
+
+	for (let index = 0; index < pageCount; index++) {
+		dots.add_child(new St.Widget({
+			style_class: 'widget-power-page-dot',
+			style: `background-color: ${index === page ? theme.text : theme.muted};`,
+			opacity: index === page ? 255 : 110,
+		}));
+	};
+
+	return dots;
+};
+
+function scrollStep(event) {
+	switch (event.get_scroll_direction()) {
+		case Clutter.ScrollDirection.UP:
+		case Clutter.ScrollDirection.LEFT:
+			return -1;
+		case Clutter.ScrollDirection.DOWN:
+		case Clutter.ScrollDirection.RIGHT:
+			return 1;
+		case Clutter.ScrollDirection.SMOOTH: {
+			const [dx, dy] = event.get_scroll_delta();
+			const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+
+			return Math.abs(delta) < 0.5 ? 0 : Math.sign(delta);
+		};
+		default:
+			return 0;
+	};
+};
+
+// Scrolling over the card flips between today and tomorrow. The body
+// outlives rerenders, so the handler is connected once per body.
+function connectPager(body) {
+	body.reactive = true;
+	body.connect('scroll-event', (_actor, event) => {
+		const id = liveBodies.get(body)?.widget?.id;
+		const pageCount = pageCounts.get(id) ?? 1;
+
+		if (pageCount < 2) {
+			return Clutter.EVENT_PROPAGATE;
+		};
+
+		const step = scrollStep(event);
+
+		if (step === 0 || Date.now() - lastFlip < FLIP_COOLDOWN_MS) {
+			return Clutter.EVENT_STOP;
+		};
+
+		lastFlip = Date.now();
+		pages.set(id, ((pages.get(id) ?? 0) + step + pageCount) % pageCount);
+		rerender();
+		return Clutter.EVENT_STOP;
+	});
 };
 
 export function render(context) {
@@ -654,6 +743,7 @@ export function render(context) {
 
 	if (!liveBodies.has(body)) {
 		body.connect('destroy', () => liveBodies.delete(body));
+		connectPager(body);
 	};
 
 	liveBodies.set(body, context);

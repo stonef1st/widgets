@@ -49,3 +49,14 @@
 .widget-power-scale-label {
 	font-size: 10px;
 }
+
+.widget-power-pages {
+	margin-top: 6px;
+	spacing: 5px;
+}
+
+.widget-power-page-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 3px;
+}
