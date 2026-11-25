@@ -116,6 +116,7 @@ function htmlText(html) {
 		.replace(/&nbsp;/g, ' ')
 		.replace(/&ndash;/g, '–')
 		.replace(/&mdash;/g, '—')
+		.replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
 		.replace(/&amp;/g, '&')
 		.replace(/\s+/g, ' ');
 };
@@ -136,10 +137,11 @@ function blockDate(text) {
 
 // Hours off per queue → {<group>: {<hour 1-24>: state}}; a queue the
 // announcement leaves out has power all day. null without any queue.
-function blockGroups(text) {
+// `queuePattern` captures the queue ("1.1") and its run of time ranges.
+function blockGroups(text, queuePattern = QUEUE) {
 	const off = {};
 
-	for (const [, queue, ranges] of text.matchAll(QUEUE)) {
+	for (const [, queue, ranges] of text.matchAll(queuePattern)) {
 		const slots = off[`GPV${queue}`] ??= new Array(SLOTS_PER_DAY).fill(false);
 
 		for (const [, fromHour, fromMinute, toHour, toMinute] of ranges.matchAll(RANGE)) {
@@ -212,8 +214,44 @@ async function fetchHoeDays(session, wanted, cancellable) {
 	return Object.fromEntries(Object.entries(found).map(([key, groups]) => [wanted[key], groups]));
 };
 
+// zoe.com.ua/outage/ is one <article> per announcement, newest first. The
+// <h2> names the day ("26 ЛИСТОПАДА ПО … ДІЯТИМУТЬ ГПВ", "ОНОВЛЕНО ГПВ НА
+// 25 ЛИСТОПАДА … (оновлено 22:21)"); the body lists "1.1: 00:00 – 04:30, …".
+const ZOE_URL = 'https://www.zoe.com.ua';
+const ZOE_DATE = new RegExp(`(\\d{1,2})\\s+(${MONTHS_GENITIVE.join('|')})`);
+const ZOE_QUEUE = new RegExp(`(?<![\\d.:])(\\d\\.\\d)\\s*:\\s*((?:\\d{1,2}:\\d{2}\\s*${DASH}\\s*\\d{1,2}:\\d{2}[\\s;,]*)+)`, 'g');
+
+async function fetchZoeDays(session, wanted, cancellable) {
+	const html = await fetchText(session, `${ZOE_URL}/outage/`, cancellable);
+	const seen = new Set();
+	const found = {};
+
+	for (const article of html.split(/<article\b/i).slice(1)) {
+		const title = htmlText(article.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i)?.[1] ?? '').toLowerCase();
+		const named = title.match(ZOE_DATE);
+		const key = named ? `${Number(named[1])}.${MONTHS_GENITIVE.indexOf(named[2]) + 1}` : null;
+
+		// Only the newest announcement for a day counts: when it has no
+		// queues (cancelled, say), an older one must not stand in for it.
+		if (!(key in wanted) || seen.has(key)) {
+			continue;
+		};
+
+		seen.add(key);
+
+		const groups = blockGroups(htmlText(article), ZOE_QUEUE);
+
+		if (groups) {
+			found[wanted[key]] = groups;
+		};
+	};
+
+	return found;
+};
+
 export const SCHEDULE_FALLBACKS = {
 	Khmelnytskoblenerho: {source: 'hoe.com.ua', fetchDays: fetchHoeDays},
+	Zaporizhzhiaoblenergo: {source: 'zoe.com.ua', fetchDays: fetchZoeDays},
 };
 
 // Today and tomorrow without a schedule in `data`, as {"{day}.{month}": midnight unix}.
