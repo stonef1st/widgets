@@ -43,6 +43,11 @@
     font-weight: 700;
 }
 
+.widget-panel-alert-yellow {
+    background-color: #f6d32d;
+    color: #241f31;
+}
+
 .widget-panel-muted {
     color: rgba(255, 255, 255, 0.6);
 }

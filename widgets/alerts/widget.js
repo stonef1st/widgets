@@ -17,6 +17,9 @@ export const defaultSize = 'small';
 export const optional = true;
 
 const POLL_SECONDS = 30;
+// Yellow alert level: dark text, white would not read on yellow.
+const YELLOW_TEXT = '#241f31';
+const YELLOW_MUTED = 'rgba(36, 31, 49, 0.78)';
 
 const TYPE_LABELS = {
 	AIR: 'Air raid alert',
@@ -184,7 +187,7 @@ function statusSummary() {
 	};
 
 	if (state.status?.active) {
-		return {active: true, error: false, label: state.status.types.map(typeLabel).join(', ')};
+		return {active: true, error: false, level: state.status.level, label: state.status.types.map(typeLabel).join(', ')};
 	};
 
 	return {active: false, error: state.error, label: state.error ? _('Alert service unavailable') : ''};
@@ -216,16 +219,17 @@ function build(body, {createLabel, theme, settings, setDanger}) {
 	const regionName = settings?.get_string('alerts-region-name') || _('Region not set');
 	const status = state.status;
 	const active = Boolean(regionId && status?.active);
-	const text = active ? '#ffffff' : theme.text;
-	const muted = active ? 'rgba(255, 255, 255, 0.82)' : theme.muted;
+	const tone = active ? (status.level === 'yellow' ? 'yellow' : 'red') : null;
+	const text = tone === 'yellow' ? YELLOW_TEXT : active ? '#ffffff' : theme.text;
+	const muted = tone === 'yellow' ? YELLOW_MUTED : active ? 'rgba(255, 255, 255, 0.82)' : theme.muted;
 
-	setDanger?.(active);
+	setDanger?.(tone);
 
 	const header = new St.BoxLayout({style_class: 'widget-alerts-header'});
 	const icon = new St.Icon({
 		icon_name: active ? 'dialog-warning-symbolic' : 'security-high-symbolic',
 		style_class: 'widget-alerts-icon',
-		style: `color: ${active ? '#ffffff' : theme.accent};`,
+		style: `color: ${active ? text : theme.accent};`,
 	});
 	const regionLabel = createLabel(regionName, 'widget-alerts-region', `color: ${muted};`);
 

@@ -18,11 +18,14 @@ const TINTS = {
   dark: [0.07, 0.07, 0.09, 0.46],
   light: [1.0, 1.0, 1.0, 0.56],
 };
-// Danger glass (air alert, no power) is the wallpaper's brightness painted red:
-// mixing red into a colored wallpaper turned it brown on green and purple on blue.
-// The range keeps white text readable on the lightest wallpapers.
-const DANGER_SHADOW = [0.28, 0.02, 0.05];
-const DANGER_LIGHT = [0.98, 0.20, 0.24];
+// Danger glass (air alert, no power) is the wallpaper's brightness painted in
+// one color: mixing red into a colored wallpaper turned it brown on green and
+// purple on blue. Red keeps white text readable; yellow (the lower alert
+// level) carries dark text.
+const DANGER_TONES = {
+  red: {shadow: [0.28, 0.02, 0.05], light: [0.98, 0.20, 0.24]},
+  yellow: {shadow: [0.72, 0.50, 0.03], light: [1.0, 0.86, 0.24]},
+};
 const DANGER_EASE_MS = 300;
 
 const DECLARATIONS = `
@@ -79,11 +82,25 @@ const GlassEffect = GObject.registerClass({
       this._widthLocation = this.get_uniform_location('width');
       this._heightLocation = this.get_uniform_location('height');
       this._dangerLocation = this.get_uniform_location('danger');
+      this._shadowLocation = this.get_uniform_location('danger_shadow');
+      this._lightLocation = this.get_uniform_location('danger_light');
       this.set_uniform_float(this.get_uniform_location('radius'), 1, [CARD_RADIUS]);
       this.set_uniform_float(this.get_uniform_location('tint'), 4, tint);
-      this.set_uniform_float(this.get_uniform_location('danger_shadow'), 3, DANGER_SHADOW);
-      this.set_uniform_float(this.get_uniform_location('danger_light'), 3, DANGER_LIGHT);
       this.set_uniform_float(this._dangerLocation, 1, [0]);
+      this.setTone('red');
+    };
+
+    setTone(tone) {
+      const colors = DANGER_TONES[tone] ?? DANGER_TONES.red;
+
+      if (this._tone === tone) {
+        return;
+      };
+
+      this._tone = tone;
+      this.set_uniform_float(this._shadowLocation, 3, colors.shadow);
+      this.set_uniform_float(this._lightLocation, 3, colors.light);
+      this.queue_repaint();
     };
 
     get danger() {
@@ -181,17 +198,22 @@ export function wrapInGlass(card, dark) {
   return actor;
 };
 
-// Turns the red danger glass on or off. Returns false for a card without glass,
-// which has to show danger with its own style.
-export function setGlassDanger(card, on) {
+// Turns the danger glass on in a tone ('red', 'yellow') or off (null). Returns
+// false for a card without glass, which has to show danger with its own style.
+export function setGlassDanger(card, tone) {
   const entry = glassCards.get(card);
 
   if (!entry) {
     return false;
   };
 
-  const target = on ? 1 : 0;
+  const target = tone ? 1 : 0;
   const {surface, glass} = entry;
+
+  // Off keeps the last tone, so the fade out stays in its color.
+  if (tone) {
+    glass.setTone(tone);
+  };
 
   if (glass.danger !== target) {
     surface.remove_transition('@effects.glass.danger');

@@ -72,8 +72,12 @@ const ACCENT_COLORS = {
   purple: '#9141ac',
   slate: '#6f8396',
 };
-// Cards without glass during an air alert or a power outage.
-const DANGER_CARD_STYLE = 'background-color: #c01c28; border-color: #a51d2d; color: #ffffff;';
+// Cards without glass during an air alert or a power outage; yellow is the
+// lower alert level.
+const DANGER_CARD_STYLES = {
+  red: 'background-color: #c01c28; border-color: #a51d2d; color: #ffffff;',
+  yellow: 'background-color: #f6d32d; border-color: #e5a50a; color: #241f31;',
+};
 
 function defaultWidgetPositions() {
   const monitor = Main.layoutManager.primaryMonitor;
@@ -1093,15 +1097,17 @@ class WidgetController {
     this._dragActor = null;
   };
 
-  // Air alert or no power: red glass, or a solid red card without glass.
-  _setWidgetDanger(widget, body, on) {
+  // Air alert or no power: red (or yellow) glass, or a solid card without glass.
+  // tone is 'red', 'yellow', true (red) or a falsy value (normal card).
+  _setWidgetDanger(widget, body, tone) {
     const card = body.get_parent();
+    const resolved = tone === true ? 'red' : tone || null;
 
-    if (!card || setGlassDanger(card, on)) {
+    if (!card || setGlassDanger(card, resolved)) {
       return;
     };
 
-    card.set_style(on ? DANGER_CARD_STYLE : this._styleForWidget(widget));
+    card.set_style(resolved ? DANGER_CARD_STYLES[resolved] ?? DANGER_CARD_STYLES.red : this._styleForWidget(widget));
   };
 
   _fillWidgetBody(widget, body) {

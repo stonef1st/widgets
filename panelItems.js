@@ -229,7 +229,7 @@ export class PanelItems {
 	// Silent while all is clear. When the service is down the item stays
 	// visible, because an empty panel would read as "no alert". Rechecked on
 	// every poll, so a narrower panel drops the text within one poll.
-	_showAlerts({active, error, label}) {
+	_showAlerts({active, error, label, level}) {
 		const item = this._items.get('alerts');
 
 		if (!item) {
@@ -241,7 +241,9 @@ export class PanelItems {
 			return;
 		};
 
-		item.show(ALERT_ICON, label, {styleClass: active ? 'widget-panel-alert' : 'widget-panel-muted'});
+		const alertClass = level === 'yellow' ? 'widget-panel-alert widget-panel-alert-yellow' : 'widget-panel-alert';
+
+		item.show(ALERT_ICON, label, {styleClass: active ? alertClass : 'widget-panel-muted'});
 		item.fitLabel();
 	};
 

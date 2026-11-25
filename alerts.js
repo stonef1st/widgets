@@ -59,10 +59,12 @@ function isDescendant(regions, id, ancestorId) {
 	return false;
 };
 
-// Returns {active, types, since} for the watched region ids.
+// Returns {active, types, since, level} for the watched region ids. level is
+// 'yellow' only when every alert is Yellow; a missing level counts as red.
 export function alertStatus(alerts, regionIds) {
 	const types = new Set();
 	let since = null;
+	let red = false;
 
 	for (const region of alerts ?? []) {
 		if (!regionIds.has(String(region.regionId))) {
@@ -71,6 +73,12 @@ export function alertStatus(alerts, regionIds) {
 
 		for (const alert of region.activeAlerts ?? []) {
 			types.add(alert.type);
+
+			const levels = (alert.activeAlertLevels ?? []).map(level => level.alertLevel);
+
+			if (levels.length === 0 || levels.some(level => level !== 'Yellow')) {
+				red = true;
+			};
 
 			const started = new Date(alert.lastUpdate ?? region.lastUpdate);
 
@@ -84,5 +92,6 @@ export function alertStatus(alerts, regionIds) {
 		active: types.size > 0,
 		types: [...types],
 		since,
+		level: types.size === 0 ? null : red ? 'red' : 'yellow',
 	};
 };
