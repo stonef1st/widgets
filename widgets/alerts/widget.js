@@ -17,8 +17,6 @@ export const defaultSize = 'small';
 export const optional = true;
 
 const POLL_SECONDS = 30;
-const ALERT_BACKGROUND = '#c01c28';
-const ALERT_BORDER = '#a51d2d';
 
 const TYPE_LABELS = {
 	AIR: 'Air raid alert',
@@ -213,15 +211,7 @@ export function style(theme) {
 	return `background-color: ${theme.background}; border-color: ${theme.border}; color: ${theme.text};`;
 };
 
-function applyCardStyle(body, theme, active) {
-	const card = body.get_parent();
-
-	card?.set_style(active
-		? `background-color: ${ALERT_BACKGROUND}; border-color: ${ALERT_BORDER}; color: #ffffff;`
-		: style(theme));
-};
-
-function build(body, {createLabel, theme, settings}) {
+function build(body, {createLabel, theme, settings, setDanger}) {
 	const regionId = settings?.get_string('alerts-region-id') ?? '';
 	const regionName = settings?.get_string('alerts-region-name') || _('Region not set');
 	const status = state.status;
@@ -229,7 +219,7 @@ function build(body, {createLabel, theme, settings}) {
 	const text = active ? '#ffffff' : theme.text;
 	const muted = active ? 'rgba(255, 255, 255, 0.82)' : theme.muted;
 
-	applyCardStyle(body, theme, active);
+	setDanger?.(active);
 
 	const header = new St.BoxLayout({style_class: 'widget-alerts-header'});
 	const icon = new St.Icon({

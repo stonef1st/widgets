@@ -21,7 +21,7 @@ import { configureLogger, resetLogger, warn } from './logger.js';
 import { _, format, setLanguage } from './i18n.js';
 import { refresh as refreshClickUp } from './clickup.js';
 import * as ClickUpNotifications from './clickupNotifications.js';
-import { wrapInGlass } from './glass.js';
+import { setGlassDanger, wrapInGlass } from './glass.js';
 import { PanelItems } from './panelItems.js';
 import { WorkspaceIntegration } from './workspaceIntegration.js';
 
@@ -72,6 +72,8 @@ const ACCENT_COLORS = {
   purple: '#9141ac',
   slate: '#6f8396',
 };
+// Cards without glass during an air alert or a power outage.
+const DANGER_CARD_STYLE = 'background-color: #c01c28; border-color: #a51d2d; color: #ffffff;';
 
 function defaultWidgetPositions() {
   const monitor = Main.layoutManager.primaryMonitor;
@@ -1091,6 +1093,17 @@ class WidgetController {
     this._dragActor = null;
   };
 
+  // Air alert or no power: red glass, or a solid red card without glass.
+  _setWidgetDanger(widget, body, on) {
+    const card = body.get_parent();
+
+    if (!card || setGlassDanger(card, on)) {
+      return;
+    };
+
+    card.set_style(on ? DANGER_CARD_STYLE : this._styleForWidget(widget));
+  };
+
   _fillWidgetBody(widget, body) {
     body.destroy_all_children();
     const widgetModule = WIDGETS.get(widget.type);
@@ -1108,6 +1121,7 @@ class WidgetController {
       weatherLocation: this._weatherLocation,
       settings: this._layoutSettings,
       createLabel: this._label.bind(this),
+      setDanger: on => this._setWidgetDanger(widget, body, on),
       sizeForWidget,
     });
   };

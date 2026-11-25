@@ -18,12 +18,21 @@ const TINTS = {
   dark: [0.07, 0.07, 0.09, 0.46],
   light: [1.0, 1.0, 1.0, 0.56],
 };
+// Danger glass (air alert, no power) is the wallpaper's brightness painted red:
+// mixing red into a colored wallpaper turned it brown on green and purple on blue.
+// The range keeps white text readable on the lightest wallpapers.
+const DANGER_SHADOW = [0.42, 0.04, 0.07];
+const DANGER_LIGHT = [0.80, 0.13, 0.17];
+const DANGER_EASE_MS = 300;
 
 const DECLARATIONS = `
 uniform float width;
 uniform float height;
 uniform float radius;
 uniform vec4 tint;
+uniform float danger;
+uniform vec3 danger_shadow;
+uniform vec3 danger_light;
 `;
 
 // Runs after Cogl has sampled the blurred card into cogl_color_out.
@@ -45,20 +54,51 @@ float rim = band * (0.12 + 0.62 * pow(max(facing, 0.0), 2.0) + 0.28 * pow(max(-f
 float sheen = 0.09 * pow(1.0 - clamp(point.y / height, 0.0, 1.0), 3.0);
 
 vec3 color = cogl_color_out.rgb;
-color = clamp(mix(vec3(dot(color, vec3(0.2126, 0.7152, 0.0722))), color, 1.25), 0.0, 1.0);
+float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
+color = clamp(mix(vec3(luma), color, 1.25), 0.0, 1.0);
 color = mix(color, tint.rgb, tint.a);
+color = mix(color, mix(danger_shadow, danger_light, luma), danger);
 color += (1.0 - color) * clamp(rim + sheen, 0.0, 1.0);
 cogl_color_out = vec4(color * coverage, coverage);
 `;
 
-const GlassEffect = GObject.registerClass(
+const GlassEffect = GObject.registerClass({
+  Properties: {
+    // Eased through '@effects.glass.danger', so it is a GObject property.
+    'danger': GObject.ParamSpec.double(
+      'danger', null, null,
+      GObject.ParamFlags.READWRITE,
+      0, 1, 0
+    ),
+  },
+},
   class GlassEffect extends Shell.GLSLEffect {
     _init(tint) {
-      super._init();
+      super._init({name: 'glass'});
+      this._danger = 0;
       this._widthLocation = this.get_uniform_location('width');
       this._heightLocation = this.get_uniform_location('height');
+      this._dangerLocation = this.get_uniform_location('danger');
       this.set_uniform_float(this.get_uniform_location('radius'), 1, [CARD_RADIUS]);
       this.set_uniform_float(this.get_uniform_location('tint'), 4, tint);
+      this.set_uniform_float(this.get_uniform_location('danger_shadow'), 3, DANGER_SHADOW);
+      this.set_uniform_float(this.get_uniform_location('danger_light'), 3, DANGER_LIGHT);
+      this.set_uniform_float(this._dangerLocation, 1, [0]);
+    };
+
+    get danger() {
+      return this._danger;
+    };
+
+    set danger(value) {
+      if (this._danger === value) {
+        return;
+      };
+
+      this._danger = value;
+      this.set_uniform_float(this._dangerLocation, 1, [value]);
+      this.queue_repaint();
+      this.notify('danger');
     };
 
     vfunc_build_pipeline() {
@@ -105,8 +145,11 @@ function createSurface(owner, monitor, dark) {
   );
   surface.connect('destroy', () => manager.destroy());
 
-  return surface;
+  return {surface, glass};
 };
+
+// Glass cards by their card, for setGlassDanger().
+const glassCards = new WeakMap();
 
 // Returns the actor to place on the desktop: the glass with the card on top.
 // The card keeps its style, but its own background has to be transparent.
@@ -127,10 +170,36 @@ export function wrapInGlass(card, dark) {
   };
 
   if (monitor) {
-    addFilling(createSurface(actor, monitor, dark));
+    const {surface, glass} = createSurface(actor, monitor, dark);
+
+    addFilling(surface);
+    glassCards.set(card, {surface, glass});
   };
 
   addFilling(card);
 
   return actor;
+};
+
+// Turns the red danger glass on or off. Returns false for a card without glass,
+// which has to show danger with its own style.
+export function setGlassDanger(card, on) {
+  const entry = glassCards.get(card);
+
+  if (!entry) {
+    return false;
+  };
+
+  const target = on ? 1 : 0;
+  const {surface, glass} = entry;
+
+  if (glass.danger !== target) {
+    surface.remove_transition('@effects.glass.danger');
+    surface.ease_property('@effects.glass.danger', target, {
+      duration: DANGER_EASE_MS,
+      mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+    });
+  };
+
+  return true;
 };

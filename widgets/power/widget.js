@@ -576,7 +576,7 @@ function buildScale(createLabel, theme) {
 	return scale;
 };
 
-function build(body, {createLabel, theme, settings}) {
+function build(body, {createLabel, theme: baseTheme, settings, setDanger}) {
 	const provider = settings?.get_string('outage-provider') ?? '';
 	const group = settings?.get_string('outage-group') ?? '';
 	const header = new St.BoxLayout({style_class: 'widget-power-header'});
@@ -584,12 +584,19 @@ function build(body, {createLabel, theme, settings}) {
 	const status = provider && group && data ? scheduleStatus(data, group) : null;
 	const events = addressEvents(settings);
 	const {active, upcoming} = splitEvents(events);
+	// Red card only while the power is surely off: not for 'maybe', not ahead of time.
+	const danger = Boolean(provider && group && data && (active || status?.current === 'off'));
+	const theme = danger
+		? {...baseTheme, text: '#ffffff', muted: 'rgba(255, 255, 255, 0.82)', track: 'rgba(255, 255, 255, 0.18)'}
+		: baseTheme;
 	const iconState = active?.kind ?? status?.current;
 	const icon = new St.Icon({
 		icon_name: 'ac-adapter-symbolic',
 		style_class: 'widget-power-icon',
-		style: `color: ${iconState ? SLOT_COLORS[iconState] ?? theme.muted : theme.muted};`,
+		style: `color: ${danger ? theme.text : iconState ? SLOT_COLORS[iconState] ?? theme.muted : theme.muted};`,
 	});
+
+	setDanger?.(danger);
 	const title = provider && group
 		? format(_('Group %s'), groupLabel(group))
 		: _('Power Outages');
