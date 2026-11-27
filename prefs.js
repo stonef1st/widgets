@@ -242,10 +242,15 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 			preview?.play();
 		});
 		chooseButton.connect('clicked', () => {
-			const filter = new Gtk.FileFilter({name: _('Sounds')});
+			const filter = new Gtk.FileFilter({name: _('Sounds (WAV, Ogg Vorbis)')});
 			const filters = new Gio.ListStore({item_type: Gtk.FileFilter});
 
-			filter.add_mime_type('audio/*');
+			// The shell plays sounds through libcanberra, which only reads WAV
+			// and Ogg Vorbis. The preview here would also play MP3 or FLAC.
+			for (const suffix of ['wav', 'ogg', 'oga']) {
+				filter.add_suffix(suffix);
+			};
+
 			filters.append(filter);
 
 			const dialog = new Gtk.FileDialog({title: _('Sound file'), filters, default_filter: filter});

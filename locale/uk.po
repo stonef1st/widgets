@@ -430,8 +430,8 @@ msgstr "Прослухати"
 msgid "Choose…"
 msgstr "Вибрати…"
 
-msgid "Sounds"
-msgstr "Звуки"
+msgid "Sounds (WAV, Ogg Vorbis)"
+msgstr "Звуки (WAV, Ogg Vorbis)"
 
 msgid "Could not open the file"
 msgstr "Не вдалося відкрити файл"
