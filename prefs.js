@@ -73,21 +73,29 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 
 		setLanguage(settings.get_string('language'));
 		window.set_default_size(640, 720);
+		// The Claude, power and ClickUp tab icons ship with the extension.
+		Gtk.IconTheme.get_for_display(window.get_display()).add_search_path(`${this.path}/icons`);
 
-		const page = new Adw.PreferencesPage({
-			title: _('Widgets'),
-			icon_name: 'view-grid-symbolic',
-		});
+		// One tab for the shared settings, then one per widget that has any.
+		const pages = [
+			[_('General'), 'preferences-system-symbolic', [this._generalGroup]],
+			[_('Weather'), 'weather-few-clouds-symbolic', [this._weatherGroup]],
+			[_('Calendar'), 'x-office-calendar-symbolic', [this._calendarGroup]],
+			[_('Alerts'), 'security-high-symbolic', [this._alertsGroup]],
+			[_('Power'), 'power-symbolic', [this._outagesGroup, this._addressOutagesGroup]],
+			['Claude', 'claude-symbolic', [this._claudeGroup]],
+			['ClickUp', 'clickup', [this._clickUpGroup]],
+		];
 
-		window.add(page);
-		page.add(this._generalGroup(settings));
-		page.add(this._weatherGroup(settings));
-		page.add(this._calendarGroup(settings));
-		page.add(this._alertsGroup(settings));
-		page.add(this._outagesGroup(settings));
-		page.add(this._addressOutagesGroup(settings));
-		page.add(this._claudeGroup(settings));
-		page.add(this._clickUpGroup(settings));
+		for (const [title, iconName, groups] of pages) {
+			const page = new Adw.PreferencesPage({title, icon_name: iconName});
+
+			for (const group of groups) {
+				page.add(group.call(this, settings));
+			};
+
+			window.add(page);
+		};
 	};
 
 	_generalGroup(settings) {
@@ -224,7 +232,8 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 
 			soundRow.visible = turbo;
 			fileRow.visible = turbo && settings.get_string('clickup-notify-sound') === 'file';
-			fileRow.subtitle = path ? GLib.path_get_basename(path) : _('No file chosen');
+			fileRow.subtitle = `${path ? GLib.path_get_basename(path) : _('No file chosen')}\n${
+				_('WAV or Ogg Vorbis (not MP3, FLAC or Opus). Plays once and to the end, closing does not stop it, so 1–3 s is best.')}`;
 			playButton.sensitive = soundPath() !== null;
 		};
 

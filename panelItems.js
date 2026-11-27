@@ -20,8 +20,11 @@ const SYSTEM_ITEMS = ['screenRecording', 'screenSharing', 'dwellClick', 'a11y', 
 const ALERT_ICON = Gio.ThemedIcon.new('dialog-warning-symbolic');
 const CALENDAR_ICON = Gio.ThemedIcon.new('x-office-calendar-symbolic');
 const ICONS_DIR = Gio.File.new_for_uri(import.meta.url).get_parent().get_child('icons');
-const POWER_ICON = Gio.FileIcon.new(ICONS_DIR.get_child('power-symbolic.svg'));
-const CLAUDE_ICON = Gio.FileIcon.new(ICONS_DIR.get_child('claude-symbolic.svg'));
+// Symbolic icons sit in a theme layout: GTK only recolors them there, which
+// the preferences window needs. The shell takes them by file.
+const SYMBOLIC_DIR = ICONS_DIR.resolve_relative_path('hicolor/scalable/status');
+const POWER_ICON = Gio.FileIcon.new(SYMBOLIC_DIR.get_child('power-symbolic.svg'));
+const CLAUDE_ICON = Gio.FileIcon.new(SYMBOLIC_DIR.get_child('claude-symbolic.svg'));
 const CLICKUP_ICON = Gio.FileIcon.new(ICONS_DIR.get_child('clickup.svg'));
 
 function openWeatherApp() {
