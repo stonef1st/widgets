@@ -222,7 +222,8 @@ async function fetchTasks() {
 	await withApi(async get => {
 		const status = state.settings.get_string('clickup-status').trim();
 		const listId = state.settings.get_string('clickup-list-id').trim();
-		const query = [`statuses%5B%5D=${encodeURIComponent(status)}`];
+		// The team endpoint leaves subtasks out unless asked for them.
+		const query = [`statuses%5B%5D=${encodeURIComponent(status)}`, 'subtasks=true'];
 
 		if (state.settings.get_boolean('clickup-only-mine')) {
 			query.push(`assignees%5B%5D=${state.userId}`);
@@ -237,7 +238,8 @@ async function fetchTasks() {
 		const {tasks} = await get(`/team/${state.teamId}/task?${query.join('&')}`);
 		const queryKey = `${state.teamId}?${query.join('&')}`;
 
-		state.tasks = (tasks ?? []).map(taskFromApi).sort(byDueDate);
+		// Archived subtasks still come back with subtasks=true.
+		state.tasks = (tasks ?? []).filter(task => !task.archived).map(taskFromApi).sort(byDueDate);
 		announceNewTasks(state.tasks, queryKey, status);
 	});
 	state.fetchingTasks = false;
