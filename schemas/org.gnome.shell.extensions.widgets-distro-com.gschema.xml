@@ -146,6 +146,21 @@
       <summary>Notify about new tasks</summary>
       <description>Show a notification when a task appears in the listed status: created there, moved in, or newly assigned.</description>
     </key>
+    <key name="clickup-notify-urgent" type="b">
+      <default>false</default>
+      <summary>Turbo notifications</summary>
+      <description>Show new task notifications as critical: with a sound, kept on screen until closed, also in Do Not Disturb and over full-screen windows.</description>
+    </key>
+    <key name="clickup-notify-sound" type="s">
+      <default>'message-new-instant'</default>
+      <summary>Turbo notification sound</summary>
+      <description>A freedesktop sound theme name, “none” for silence, or “file” for the file in clickup-notify-sound-file.</description>
+    </key>
+    <key name="clickup-notify-sound-file" type="s">
+      <default>''</default>
+      <summary>Turbo notification sound file</summary>
+      <description>Path of the sound file used when clickup-notify-sound is “file”.</description>
+    </key>
     <key name="calendar-show-events" type="b">
       <default>true</default>
       <summary>Show calendar events</summary>

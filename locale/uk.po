@@ -402,3 +402,60 @@ msgstr "Вулиця"
 
 msgid "House"
 msgstr "Будинок"
+
+msgid "Turbo notifications"
+msgstr "Турбо-сповіщення"
+
+msgid "With a sound, stay until closed, also in Do Not Disturb and over full-screen windows"
+msgstr "Зі звуком, не зникають, поки не закриєш, навіть у «Не турбувати» і поверх повноекранних вікон"
+
+msgid "Sound"
+msgstr "Звук"
+
+msgid "No sound"
+msgstr "Без звуку"
+
+msgid "Own file…"
+msgstr "Свій файл…"
+
+msgid "Sound file"
+msgstr "Файл звуку"
+
+msgid "No file chosen"
+msgstr "Файл не вибрано"
+
+msgid "Listen"
+msgstr "Прослухати"
+
+msgid "Choose…"
+msgstr "Вибрати…"
+
+msgid "Sounds"
+msgstr "Звуки"
+
+msgid "Could not open the file"
+msgstr "Не вдалося відкрити файл"
+
+msgid "Instant message"
+msgstr "Миттєве повідомлення"
+
+msgid "Message"
+msgstr "Повідомлення"
+
+msgid "Bell"
+msgstr "Дзвіночок"
+
+msgid "Complete"
+msgstr "Готово"
+
+msgid "Information"
+msgstr "Інформація"
+
+msgid "Warning"
+msgstr "Попередження"
+
+msgid "Alarm clock"
+msgstr "Будильник"
+
+msgid "Incoming call"
+msgstr "Вхідний дзвінок"

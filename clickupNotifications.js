@@ -30,9 +30,33 @@ function getSource() {
 	return source;
 };
 
-function show(title, body, url) {
+function turboSound(settings) {
+	const choice = settings.get_string('clickup-notify-sound');
+
+	if (choice === 'none') {
+		return null;
+	};
+
+	if (choice === 'file') {
+		const path = settings.get_string('clickup-notify-sound-file');
+
+		return path ? new MessageTray.Sound(Gio.File.new_for_path(path), null) : null;
+	};
+
+	return new MessageTray.Sound(null, choice);
+};
+
+// Turbo makes the notification critical: the shell then keeps the banner up
+// until it is closed and shows it in Do Not Disturb and over full-screen
+// windows. The shell plays the sound when the banner comes up.
+function show(title, body, url, settings) {
 	const tray = getSource();
 	const notification = new MessageTray.Notification({source: tray, title, body});
+
+	if (settings?.get_boolean('clickup-notify-urgent')) {
+		notification.urgency = MessageTray.Urgency.CRITICAL;
+		notification.sound = turboSound(settings);
+	};
 
 	if (url) {
 		notification.connect('activated', () => openTask(url));
@@ -41,14 +65,14 @@ function show(title, body, url) {
 	tray.addNotification(notification);
 };
 
-function notifyNewTasks(tasks, status) {
+function notifyNewTasks(tasks, status, settings) {
 	if (tasks.length > MAX_SEPARATE) {
-		show(format(_('New tasks in “%s”: %s'), status, tasks.length), tasks.map(task => task.name).join('\n'), null);
+		show(format(_('New tasks in “%s”: %s'), status, tasks.length), tasks.map(task => task.name).join('\n'), null, settings);
 		return;
 	};
 
 	for (const task of tasks) {
-		show(task.name, format(_('New task in “%s”'), status), task.url);
+		show(task.name, format(_('New task in “%s”'), status), task.url, settings);
 	};
 };
 

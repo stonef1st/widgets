@@ -1,11 +1,12 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import { REGIONS_URL, indexRegions } from './alerts.js';
-import { forgetToken, hasToken, saveToken } from './clickup.js';
+import { NOTIFY_SOUNDS, forgetToken, hasToken, saveToken, themeSoundPath } from './clickup.js';
 import { _, availableLanguages, setLanguage } from './i18n.js';
 import { createSession, fetchJson } from './net.js';
 import { GROUPS, PROVIDERS, groupLabel } from './outages.js';
@@ -15,6 +16,18 @@ import { ADAPTERS } from './planned.js';
 const LANGUAGE_NAMES = {
 	en: 'English',
 	uk: 'Українська',
+};
+
+// Untranslated menu labels of NOTIFY_SOUNDS, passed through _() when shown.
+const SOUND_LABELS = {
+	'message-new-instant': 'Instant message',
+	'message': 'Message',
+	'bell': 'Bell',
+	'complete': 'Complete',
+	'dialog-information': 'Information',
+	'dialog-warning': 'Warning',
+	'alarm-clock-elapsed': 'Alarm clock',
+	'phone-incoming-call': 'Incoming call',
 };
 
 function stringComboRow({title, subtitle = null, values, labels, settings, key, search = false}) {
@@ -160,8 +173,110 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 		group.add(mineRow);
 		settings.bind('clickup-notify', notifyRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 		group.add(notifyRow);
+		this._addTurboRows(group, settings);
 		this._addPanelRows(group, settings, 'panel-clickup', _('Running timer, only while it runs'));
 		return group;
+	};
+
+	// The sound rows only show while turbo is on, and all of them grey out
+	// with notifications off.
+	_addTurboRows(group, settings) {
+		const turboRow = new Adw.SwitchRow({
+			title: _('Turbo notifications'),
+			subtitle: _('With a sound, stay until closed, also in Do Not Disturb and over full-screen windows'),
+		});
+		const soundRow = stringComboRow({
+			title: _('Sound'),
+			values: ['none', ...NOTIFY_SOUNDS, 'file'],
+			labels: [_('No sound'), ...NOTIFY_SOUNDS.map(name => _(SOUND_LABELS[name])), _('Own file…')],
+			settings,
+			key: 'clickup-notify-sound',
+		});
+		const fileRow = new Adw.ActionRow({title: _('Sound file')});
+		const playButton = new Gtk.Button({
+			icon_name: 'media-playback-start-symbolic',
+			tooltip_text: _('Listen'),
+			valign: Gtk.Align.CENTER,
+			css_classes: ['flat'],
+		});
+		const chooseButton = new Gtk.Button({label: _('Choose…'), valign: Gtk.Align.CENTER});
+		// Kept so the preview is not collected while it plays.
+		let preview = null;
+
+		const soundPath = () => {
+			const choice = settings.get_string('clickup-notify-sound');
+
+			if (choice === 'none') {
+				return null;
+			};
+
+			if (choice === 'file') {
+				const path = settings.get_string('clickup-notify-sound-file');
+
+				return path && GLib.file_test(path, GLib.FileTest.EXISTS) ? path : null;
+			};
+
+			return themeSoundPath(choice);
+		};
+		const sync = () => {
+			const turbo = settings.get_boolean('clickup-notify-urgent');
+			const path = settings.get_string('clickup-notify-sound-file');
+
+			soundRow.visible = turbo;
+			fileRow.visible = turbo && settings.get_string('clickup-notify-sound') === 'file';
+			fileRow.subtitle = path ? GLib.path_get_basename(path) : _('No file chosen');
+			playButton.sensitive = soundPath() !== null;
+		};
+
+		settings.bind('clickup-notify-urgent', turboRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+
+		for (const row of [turboRow, soundRow, fileRow]) {
+			settings.bind('clickup-notify', row, 'sensitive', Gio.SettingsBindFlags.GET);
+		};
+
+		playButton.connect('clicked', () => {
+			const path = soundPath();
+
+			preview?.set_playing(false);
+			preview = path ? Gtk.MediaFile.new_for_filename(path) : null;
+			preview?.play();
+		});
+		chooseButton.connect('clicked', () => {
+			const filter = new Gtk.FileFilter({name: _('Sounds')});
+			const filters = new Gio.ListStore({item_type: Gtk.FileFilter});
+
+			filter.add_mime_type('audio/*');
+			filters.append(filter);
+
+			const dialog = new Gtk.FileDialog({title: _('Sound file'), filters, default_filter: filter});
+
+			dialog.open(fileRow.get_root(), null, (_dialog, result) => {
+				try {
+					const path = dialog.open_finish(result)?.get_path();
+
+					if (path) {
+						settings.set_string('clickup-notify-sound-file', path);
+					};
+				} catch (error) {
+					// Dismissing the dialog also lands here.
+					if (!error.matches?.(Gtk.DialogError, Gtk.DialogError.DISMISSED)) {
+						fileRow.subtitle = `${_('Could not open the file')}: ${error.message}`;
+					};
+				};
+			});
+		});
+
+		soundRow.add_suffix(playButton);
+		fileRow.add_suffix(chooseButton);
+
+		for (const key of ['clickup-notify-urgent', 'clickup-notify-sound', 'clickup-notify-sound-file']) {
+			settings.connect(`changed::${key}`, sync);
+		};
+
+		sync();
+		group.add(turboRow);
+		group.add(soundRow);
+		group.add(fileRow);
 	};
 
 	// The stamp holds no secret: it only tells the shell to reread the token.

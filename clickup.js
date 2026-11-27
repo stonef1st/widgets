@@ -16,7 +16,19 @@ const TIMER_SECONDS = 30;
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
-export const TOKEN_PATH = GLib.build_filenamev([GLib.get_user_config_dir(), 'widgets-uk', 'clickup-token']);
+// Freedesktop theme sounds offered for turbo notifications, in menu order.
+export const NOTIFY_SOUNDS = [
+	'message-new-instant',
+	'message',
+	'bell',
+	'complete',
+	'dialog-information',
+	'dialog-warning',
+	'alarm-clock-elapsed',
+	'phone-incoming-call',
+];
+
+export const TOKEN_PATH =GLib.build_filenamev([GLib.get_user_config_dir(), 'widgets-uk', 'clickup-token']);
 const AVATARS_DIR = GLib.build_filenamev([GLib.get_user_cache_dir(), 'widgets-uk', 'clickup-avatars']);
 
 Gio._promisify(Gio.File.prototype, 'load_contents_async');
@@ -206,7 +218,7 @@ function announceNewTasks(tasks, queryKey, status) {
 
 	if (added.length > 0 && notifier && state.settings?.get_boolean('clickup-notify')) {
 		try {
-			notifier(added, status);
+			notifier(added, status, state.settings);
 		} catch (error) {
 			warn('clickup-notify', `Could not show a ClickUp notification: ${error.message}`);
 		};
@@ -349,7 +361,24 @@ export function refreshNow() {
 	return fetchTasks();
 };
 
-// The handler gets the newly listed tasks and the status name. Null removes it.
+// File of a theme sound, or null when the sound theme is not installed. The
+// shell plays theme sounds by name; this is for previews in the preferences.
+export function themeSoundPath(name) {
+	for (const dir of [GLib.get_user_data_dir(), ...GLib.get_system_data_dirs()]) {
+		for (const extension of ['oga', 'ogg', 'wav']) {
+			const path = GLib.build_filenamev([dir, 'sounds', 'freedesktop', 'stereo', `${name}.${extension}`]);
+
+			if (GLib.file_test(path, GLib.FileTest.EXISTS)) {
+				return path;
+			};
+		};
+	};
+
+	return null;
+};
+
+// The handler gets the newly listed tasks, the status name and the settings.
+// Null removes it.
 export function setNotifier(handler) {
 	notifier = handler;
 };
