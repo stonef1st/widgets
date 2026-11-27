@@ -16,6 +16,10 @@ const TIMER_SECONDS = 30;
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
+// A turbo sound plays for at most this long, then starts over until the
+// notification is closed. The preview in the preferences stops after it too.
+export const TURBO_REPEAT_SECONDS = 5;
+
 // Freedesktop theme sounds offered for turbo notifications, in menu order.
 export const NOTIFY_SOUNDS = [
 	'message-new-instant',

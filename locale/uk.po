@@ -466,5 +466,5 @@ msgstr "Тривоги"
 msgid "Power"
 msgstr "Світло"
 
-msgid "WAV or Ogg Vorbis (not MP3, FLAC or Opus). Plays once and to the end, closing does not stop it, so 1–3 s is best."
-msgstr "WAV або Ogg Vorbis (не MP3, FLAC чи Opus). Грає один раз до кінця, закриття його не зупиняє, тож краще 1–3 с."
+msgid "WAV or Ogg Vorbis (not MP3, FLAC or Opus). Plays up to %s s and repeats until the notification is closed."
+msgstr "WAV або Ogg Vorbis (не MP3, FLAC чи Opus). Звучить до %s с і повторюється, поки сповіщення не закриють."

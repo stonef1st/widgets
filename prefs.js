@@ -6,8 +6,8 @@ import Gtk from 'gi://Gtk';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import { REGIONS_URL, indexRegions } from './alerts.js';
-import { NOTIFY_SOUNDS, forgetToken, hasToken, saveToken, themeSoundPath } from './clickup.js';
-import { _, availableLanguages, setLanguage } from './i18n.js';
+import { NOTIFY_SOUNDS, TURBO_REPEAT_SECONDS, forgetToken, hasToken, saveToken, themeSoundPath } from './clickup.js';
+import { _, availableLanguages, format, setLanguage } from './i18n.js';
 import { createSession, fetchJson } from './net.js';
 import { GROUPS, PROVIDERS, groupLabel } from './outages.js';
 import { ADAPTERS } from './planned.js';
@@ -208,8 +208,10 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 			css_classes: ['flat'],
 		});
 		const chooseButton = new Gtk.Button({label: _('Choose…'), valign: Gtk.Align.CENTER});
-		// Kept so the preview is not collected while it plays.
+		// Kept so the preview is not collected while it plays. It stops where
+		// the notification would start the sound over.
 		let preview = null;
+		let previewStopId = 0;
 
 		const soundPath = () => {
 			const choice = settings.get_string('clickup-notify-sound');
@@ -233,7 +235,7 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 			soundRow.visible = turbo;
 			fileRow.visible = turbo && settings.get_string('clickup-notify-sound') === 'file';
 			fileRow.subtitle = `${path ? GLib.path_get_basename(path) : _('No file chosen')}\n${
-				_('WAV or Ogg Vorbis (not MP3, FLAC or Opus). Plays once and to the end, closing does not stop it, so 1–3 s is best.')}`;
+				format(_('WAV or Ogg Vorbis (not MP3, FLAC or Opus). Plays up to %s s and repeats until the notification is closed.'), TURBO_REPEAT_SECONDS)}`;
 			playButton.sensitive = soundPath() !== null;
 		};
 
@@ -247,8 +249,22 @@ export default class WidgetsPreferences extends ExtensionPreferences {
 			const path = soundPath();
 
 			preview?.set_playing(false);
+
+			if (previewStopId) {
+				GLib.source_remove(previewStopId);
+				previewStopId = 0;
+			};
+
 			preview = path ? Gtk.MediaFile.new_for_filename(path) : null;
-			preview?.play();
+
+			if (preview) {
+				preview.play();
+				previewStopId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, TURBO_REPEAT_SECONDS, () => {
+					preview?.set_playing(false);
+					previewStopId = 0;
+					return GLib.SOURCE_REMOVE;
+				});
+			};
 		});
 		chooseButton.connect('clicked', () => {
 			const filter = new Gtk.FileFilter({name: _('Sounds (WAV, Ogg Vorbis)')});
